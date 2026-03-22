@@ -1,0 +1,649 @@
+(node:14148) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+  [90m 6 |[0m   [33mRepositoryPlaceholderCard[0m,
+  [90m 7 |[0m } [36mfrom[0m [32m"@/components/home-ui"[0m;
+[31m[1m>[0m [90m 8 |[0m [36mimport[0m {
+  [90m   |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m 9 |[0m   getHomePageViewModel,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m10 |[0m   [36mtype[0m [33mHomeSortKey[0m,
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m11 |[0m } [36mfrom[0m [32m"@/lib/repo-view-models"[0m;
+  [90m   |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m12 |[0m
+  [90m13 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mHome[0m({
+  [90m14 |[0m   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] Uncaught Error: ./src/app/page.tsx:8:1
+Module not found: Can't resolve '@/lib/repo-view-models'
+   6 |   RepositoryPlaceholderCard,
+   7 | } from "@/components/home-ui";
+>  8 | import {
+     | ^^^^^^^
+>  9 |   getHomePageViewModel,
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 10 |   type HomeSortKey,
+     | ^^^^^^^^^^^^^^^^^^^
+> 11 | } from "@/lib/repo-view-models";
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  12 |
+  13 | export default async function Home({
+  14 |   searchParams,
+
+Import map: aliased to relative './src/lib/repo-view-models' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (Error: ./src/app/page.tsx:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (Error: (./src/app/page.tsx:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  [90m1 |[0m [36mimport[0m [36mtype[0m { [33mReactNode[0m } [36mfrom[0m [32m"react"[0m;
+[31m[1m>[0m [90m2 |[0m [36mimport[0m { [33mRepoContextPanel[0m, [33mRepoTabs[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m3 |[0m
+  [90m4 |[0m [36mexport[0m [36mdefault[0m [36masync[0m [36mfunction[0m [33mRepoLayout[0m({
+  [90m5 |[0m   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m {
+  [90m  |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m2 |[0m   [33mRepoOverviewChartPlaceholder[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m3 |[0m   [33mRepoOverviewHero[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m4 |[0m   [33mRepoPreviewPanel[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m5 |[0m   [33mRepoSummaryStats[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m6 |[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m summaryStats = [
+  [90m9 |[0m   { label: [32m"Stars"[0m, value: [32m"--"[0m },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m {
+  [90m  |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m2 |[0m   [33mRepoOverviewChartPlaceholder[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m3 |[0m   [33mRepoOverviewHero[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m4 |[0m   [33mRepoPreviewPanel[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m5 |[0m   [33mRepoSummaryStats[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m6 |[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m summaryStats = [
+  [90m9 |[0m   { label: [32m"Stars"[0m, value: [32m"--"[0m },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m {
+  [90m  |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m2 |[0m   [33mRepoOverviewChartPlaceholder[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m3 |[0m   [33mRepoOverviewHero[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m4 |[0m   [33mRepoPreviewPanel[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m5 |[0m   [33mRepoSummaryStats[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m6 |[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m summaryStats = [
+  [90m9 |[0m   { label: [32m"Stars"[0m, value: [32m"--"[0m },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m {
+  [90m  |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m2 |[0m   [33mRepoOverviewChartPlaceholder[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m3 |[0m   [33mRepoOverviewHero[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m4 |[0m   [33mRepoPreviewPanel[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m5 |[0m   [33mRepoSummaryStats[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m6 |[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m summaryStats = [
+  [90m9 |[0m   { label: [32m"Stars"[0m, value: [32m"--"[0m },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+⨯ ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+[31m[1m>[0m [90m1 |[0m [36mimport[0m {
+  [90m  |[0m [31m[1m^^^^^^^[0m
+[31m[1m>[0m [90m2 |[0m   [33mRepoOverviewChartPlaceholder[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m3 |[0m   [33mRepoOverviewHero[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m4 |[0m   [33mRepoPreviewPanel[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m5 |[0m   [33mRepoSummaryStats[0m,
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^[0m
+[31m[1m>[0m [90m6 |[0m } [36mfrom[0m [32m"@/components/repo-ui"[0m;
+  [90m  |[0m [31m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m7 |[0m
+  [90m8 |[0m [36mconst[0m summaryStats = [
+  [90m9 |[0m   { label: [32m"Stars"[0m, value: [32m"--"[0m },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+> 1 | import {
+    | ^^^^^^^
+> 2 |   RepoOverviewChartPlaceholder,
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 3 |   RepoOverviewHero,
+    | ^^^^^^^^^^^^^^^^^^^
+> 4 |   RepoPreviewPanel,
+    | ^^^^^^^^^^^^^^^^^^^
+> 5 |   RepoSummaryStats,
+    | ^^^^^^^^^^^^^^^^^^^
+> 6 | } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 |
+  8 | const summaryStats = [
+  9 |   { label: "Stars", value: "--" },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+> 1 | import {
+    | ^^^^^^^
+> 2 |   RepoOverviewChartPlaceholder,
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 3 |   RepoOverviewHero,
+    | ^^^^^^^^^^^^^^^^^^^
+> 4 |   RepoPreviewPanel,
+    | ^^^^^^^^^^^^^^^^^^^
+> 5 |   RepoSummaryStats,
+    | ^^^^^^^^^^^^^^^^^^^
+> 6 | } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 |
+  8 | const summaryStats = [
+  9 |   { label: "Stars", value: "--" },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+> 1 | import {
+    | ^^^^^^^
+> 2 |   RepoOverviewChartPlaceholder,
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 3 |   RepoOverviewHero,
+    | ^^^^^^^^^^^^^^^^^^^
+> 4 |   RepoPreviewPanel,
+    | ^^^^^^^^^^^^^^^^^^^
+> 5 |   RepoSummaryStats,
+    | ^^^^^^^^^^^^^^^^^^^
+> 6 | } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 |
+  8 | const summaryStats = [
+  9 |   { label: "Stars", value: "--" },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/layout.tsx:2:1
+Module not found: Can't resolve '@/components/repo-ui'
+  1 | import type { ReactNode } from "react";
+> 2 | import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  3 |
+  4 | export default async function RepoLayout({
+  5 |   children,
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+[browser] ./src/app/repo/[repoId]/overview/page.tsx:1:1
+Module not found: Can't resolve '@/components/repo-ui'
+> 1 | import {
+    | ^^^^^^^
+> 2 |   RepoOverviewChartPlaceholder,
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 3 |   RepoOverviewHero,
+    | ^^^^^^^^^^^^^^^^^^^
+> 4 |   RepoPreviewPanel,
+    | ^^^^^^^^^^^^^^^^^^^
+> 5 |   RepoSummaryStats,
+    | ^^^^^^^^^^^^^^^^^^^
+> 6 | } from "@/components/repo-ui";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 |
+  8 | const summaryStats = [
+  9 |   { label: "Stars", value: "--" },
+
+Import map: aliased to relative './src/components/repo-ui' inside of [project]/
+
+https://nextjs.org/docs/messages/module-not-found 
+^C^C

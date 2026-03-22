@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -28,21 +29,21 @@ export default function RootLayout({
         <div className="bg-shape bg-shape-a" />
         <div className="bg-shape bg-shape-b" />
         <header className="topbar">
-          <div className="brand">
+          <Link className="brand brand-link" href="/">
             <span className="brand-mark">OS</span>
             <div>
               <h1>OpenSentry Repo View</h1>
               <p>production frontend scaffold</p>
             </div>
-          </div>
+          </Link>
           <form className="global-search" role="search" action="/search" method="get">
             <input
               name="q"
               type="search"
-              placeholder="搜索 SHA / #编号 / 标题关键词 / 用户名"
+              placeholder="Search SHA / issue number / title / user"
               autoComplete="off"
             />
-            <button type="submit">搜索</button>
+            <button type="submit">Search</button>
           </form>
         </header>
         <main className="page-wrap">{children}</main>
