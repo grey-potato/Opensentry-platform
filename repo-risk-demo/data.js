@@ -15,6 +15,22 @@ window.DEMO_DATA = {
       riskTags: ["supply-chain", "stale-dependency", "token-leak-pattern"],
       trend: "up",
       seed: 5,
+      projectPortrait: {
+        commit_frequency: 9.4,
+        active_week_ratio: 0.92,
+        collab_index: 15,
+        stargazer_count: 3894,
+        community_star_delta_window: 214,
+        community_fork_delta_window: 37,
+        issue_metrics: {
+          issue_update_count_window: 86,
+          median_issue_response_hours: 5.5,
+          median_issue_close_days: 4.2
+        },
+        pr_metrics: {
+          open_pr_backlog_count: 11
+        }
+      },
       users: [
         { id: "u1", name: "alice", role: "maintainer", risk: "medium" },
         { id: "u2", name: "bob", role: "contributor", risk: "high" },
@@ -102,6 +118,22 @@ window.DEMO_DATA = {
       riskTags: ["review-delay", "dependency-age"],
       trend: "flat",
       seed: 2,
+      projectPortrait: {
+        commit_frequency: 6.1,
+        active_week_ratio: 0.83,
+        collab_index: 9,
+        stargazer_count: 2568,
+        community_star_delta_window: 97,
+        community_fork_delta_window: 18,
+        issue_metrics: {
+          issue_update_count_window: 41,
+          median_issue_response_hours: 11.3,
+          median_issue_close_days: 6.8
+        },
+        pr_metrics: {
+          open_pr_backlog_count: 8
+        }
+      },
       users: [
         { id: "u1", name: "nina", role: "maintainer", risk: "medium" },
         { id: "u2", name: "oscar", role: "contributor", risk: "medium" },
@@ -163,6 +195,22 @@ window.DEMO_DATA = {
       riskTags: ["permission-drift", "owner-gap"],
       trend: "up",
       seed: 7,
+      projectPortrait: {
+        commit_frequency: 7.6,
+        active_week_ratio: 0.75,
+        collab_index: 13,
+        stargazer_count: 1830,
+        community_star_delta_window: 163,
+        community_fork_delta_window: 24,
+        issue_metrics: {
+          issue_update_count_window: 93,
+          median_issue_response_hours: 18.7,
+          median_issue_close_days: 9.4
+        },
+        pr_metrics: {
+          open_pr_backlog_count: 14
+        }
+      },
       users: [
         { id: "u1", name: "yuki", role: "maintainer", risk: "high" },
         { id: "u2", name: "sam", role: "contributor", risk: "medium" },
@@ -224,6 +272,22 @@ window.DEMO_DATA = {
       riskTags: ["rule-churn", "release-gap"],
       trend: "down",
       seed: 1,
+      projectPortrait: {
+        commit_frequency: 4.8,
+        active_week_ratio: 0.67,
+        collab_index: 8,
+        stargazer_count: 4112,
+        community_star_delta_window: -12,
+        community_fork_delta_window: -3,
+        issue_metrics: {
+          issue_update_count_window: 28,
+          median_issue_response_hours: 7.8,
+          median_issue_close_days: 5.1
+        },
+        pr_metrics: {
+          open_pr_backlog_count: 6
+        }
+      },
       users: [
         { id: "u1", name: "marta", role: "maintainer", risk: "medium" },
         { id: "u2", name: "ian", role: "contributor", risk: "low" },
