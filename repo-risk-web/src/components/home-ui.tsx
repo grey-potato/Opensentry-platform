@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { Locale } from "@/lib/locale";
+import { getDictionary } from "@/lib/ui-copy";
 
 type DiscoveryFilter = {
   href: string;
@@ -25,7 +27,6 @@ type RepositoryCardProps = {
   prs: string;
   contributors: string;
   tags: string[];
-  placeholder?: boolean;
 };
 
 type EmptyStateProps = {
@@ -35,11 +36,16 @@ type EmptyStateProps = {
 
 export function HomeDiscoveryFilters({
   filters,
+  locale,
 }: {
   filters: DiscoveryFilter[];
+  locale: Locale;
 }) {
   return (
-    <div className="home-filter-row" aria-label="Repository sort and discovery filters">
+    <div
+      className="home-filter-row"
+      aria-label={locale === "en" ? "Repository discovery filters" : "仓库发现筛选"}
+    >
       {filters.map((filter) => (
         <Link
           key={filter.label}
@@ -58,20 +64,23 @@ export function HomeInsightCard({
   value,
   description,
   href,
-}: InsightCardProps) {
+  locale,
+}: InsightCardProps & { locale: Locale }) {
+  const t = getDictionary(locale);
+
   return (
     <article className="card home-insight-card">
       <div className="muted">{title}</div>
       <h3>{value}</h3>
       <p className="muted">{description}</p>
       <div className="inline-links">
-        <Link href={href}>View Repository</Link>
+        <Link href={href}>{t.common.viewAll}</Link>
       </div>
     </article>
   );
 }
 
-export function RepositoryPlaceholderCard({
+export function RepositoryCard({
   name,
   description,
   href,
@@ -83,15 +92,16 @@ export function RepositoryPlaceholderCard({
   prs,
   contributors,
   tags,
-  placeholder = false,
-}: RepositoryCardProps) {
+  locale,
+}: RepositoryCardProps & { locale: Locale }) {
+  const t = getDictionary(locale);
+
   return (
-    <article className={`card repository-card ${placeholder ? "is-placeholder" : ""}`}>
+    <article className="card repository-card">
       <div className="repository-card-head">
         <h3>
           <Link href={href}>{name}</Link>
         </h3>
-        {placeholder ? <span className="badge">Placeholder</span> : null}
       </div>
       <p className="muted repository-card-description">{description}</p>
       <div className="repository-pill-row">
@@ -100,23 +110,23 @@ export function RepositoryPlaceholderCard({
       </div>
       <div className="repository-stat-grid">
         <div>
-          <span className="muted">Stars</span>
+          <span className="muted">{t.home.filters.stars}</span>
           <strong>{stars}</strong>
         </div>
         <div>
-          <span className="muted">Forks</span>
+          <span className="muted">{locale === "en" ? "Forks" : "Fork"}</span>
           <strong>{forks}</strong>
         </div>
         <div>
-          <span className="muted">Issues</span>
+          <span className="muted">{locale === "en" ? "Issues" : "Issue"}</span>
           <strong>{issues}</strong>
         </div>
         <div>
-          <span className="muted">PRs</span>
+          <span className="muted">PR</span>
           <strong>{prs}</strong>
         </div>
         <div>
-          <span className="muted">Contributors</span>
+          <span className="muted">{t.common.recordedUsers}</span>
           <strong>{contributors}</strong>
         </div>
       </div>

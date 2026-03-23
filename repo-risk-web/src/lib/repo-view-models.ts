@@ -1,46 +1,40 @@
-export type RiskLevel = "high" | "medium" | "low";
+import { unstable_cache } from "next/cache";
+import {
+  fetchAllProjects,
+  fetchIssues,
+  fetchLatestProjectPortrait,
+  fetchPullRequests,
+  fetchRepository,
+  fetchRepositoryUsers,
+  getPlatform,
+  type ProjectItem,
+} from "@/lib/opensentry-api";
+import {
+  buildIssueRelatedUsers,
+  buildPullRequestRelatedUsers,
+  formatCompactNumber,
+  formatDate,
+  formatDelta,
+  formatNumber,
+  formatPercent,
+  getObservationWindow,
+  loadCommitPreviewItems,
+  loadRepoAggregate,
+  mapIssueStateToLevel,
+  mapProjectPortrait,
+  mapPullRequestStateToLevel,
+  type MetricItemViewModel,
+  type PreviewItemViewModel,
+  type ProjectPortraitResult,
+  type RepoTimelinePointViewModel,
+  type RiskLevel,
+} from "@/lib/repo-core";
+import type { Locale } from "@/lib/locale";
+import { getDictionary } from "@/lib/ui-copy";
 
-export type HomeSortKey =
-  | "stars"
-  | "activity"
-  | "collab"
-  | "community"
-  | "updated";
+export type { MetricItemViewModel, PreviewItemViewModel, RiskLevel } from "@/lib/repo-core";
 
-export type PreviewItemViewModel = {
-  title: string;
-  meta: string;
-  level?: RiskLevel;
-};
-
-type RawRepoSource = {
-  id: string;
-  fullName: string;
-  description: string;
-  language: string;
-  license: string;
-  defaultBranch: string;
-  firstSeen: string;
-  lastSync: string;
-  riskLevel: RiskLevel;
-  riskScore: number;
-  stars: number;
-  forks: number;
-  openIssues: number;
-  openPrs: number;
-  contributors: number;
-  commitPerWeek: number;
-  activeWeekRatio: number;
-  collabIndex: number;
-  communityDelta: number;
-  issueResponseHours: number;
-  prBacklog: number;
-  entityCount: number;
-  tags: string[];
-  recentCommits: PreviewItemViewModel[];
-  openIssuesPreview: PreviewItemViewModel[];
-  prsPreview: PreviewItemViewModel[];
-};
+export type HomeSortKey = "stars" | "activity" | "collab" | "community" | "updated";
 
 export type FilterChipViewModel = {
   label: string;
@@ -75,14 +69,16 @@ export type HomePageViewModel = {
   filters: FilterChipViewModel[];
   insights: InsightCardViewModel[];
   repositories: RepositoryCardViewModel[];
+  usingLiveData: boolean;
+  errorMessage?: string;
 };
 
 export type RepoSidebarViewModel = {
   title: string;
   description: string;
   pills: string[];
-  repositoryStats: Array<{ label: string; value: string }>;
-  portraitStats: Array<{ label: string; value: string }>;
+  repositoryStats: MetricItemViewModel[];
+  portraitStats: MetricItemViewModel[];
   tags: string[];
   riskLevel: RiskLevel;
 };
@@ -91,9 +87,12 @@ export type RepoOverviewViewModel = {
   title: string;
   description: string;
   pills: string[];
+  htmlUrl: string | null;
   riskLevel: RiskLevel;
-  summaryStats: Array<{ label: string; value: string }>;
-  portraitSummary: Array<{ label: string; value: string }>;
+  summaryStats: MetricItemViewModel[];
+  portraitSummary: MetricItemViewModel[];
+  windowLabel: string;
+  timeline: RepoTimelinePointViewModel[];
   recentCommits: PreviewItemViewModel[];
   openIssues: PreviewItemViewModel[];
   pullRequests: PreviewItemViewModel[];
@@ -104,7 +103,7 @@ export type RepoRiskViewModel = {
   description: string;
   riskLevel: RiskLevel;
   tags: string[];
-  summaryStats: Array<{ label: string; value: string }>;
+  summaryStats: MetricItemViewModel[];
   snapshots: Array<{ label: string; value: string; level: RiskLevel }>;
   dimensions: Array<{
     title: string;
@@ -118,608 +117,586 @@ export type RepoRiskViewModel = {
   }>;
 };
 
-const placeholderRepos: RawRepoSource[] = [
-  {
-    id: "repo-placeholder",
-    fullName: "opensentry/platform",
-    description:
-      "Risk indexing and metadata service for open-source repositories.",
-    language: "TypeScript",
-    license: "Apache-2.0",
-    defaultBranch: "main",
-    firstSeen: "2024-08",
-    lastSync: "2026-03-22",
-    riskLevel: "medium",
-    riskScore: 68,
-    stars: 3894,
-    forks: 612,
-    openIssues: 37,
-    openPrs: 11,
-    contributors: 18,
-    commitPerWeek: 9.4,
-    activeWeekRatio: 92,
-    collabIndex: 15,
-    communityDelta: 214,
-    issueResponseHours: 5.5,
-    prBacklog: 11,
-    entityCount: 126,
-    tags: ["metadata", "portrait", "12-week window"],
-    recentCommits: [
-      {
-        title: "feat: add dependency source validation",
-        meta: "9bd13ef / alice / 2026-03-20",
-        level: "medium",
-      },
-      {
-        title: "fix: sanitize token parsing in pipeline",
-        meta: "a6f2b1c / bob / 2026-03-18",
-        level: "low",
-      },
-      {
-        title: "chore: docs and cleanup",
-        meta: "f22de66 / charlie / 2026-03-15",
-      },
-    ],
-    openIssuesPreview: [
-      {
-        title: "Auth flow allows legacy token fallback",
-        meta: "#128 / open / bob",
-        level: "high",
-      },
-      {
-        title: "Release script timeout at low network quality",
-        meta: "#121 / open / alice",
-        level: "medium",
-      },
-      {
-        title: "Dependency sync watcher misses edge case",
-        meta: "#117 / open / charlie",
-      },
-    ],
-    prsPreview: [
-      {
-        title: "refactor: split scanner worker by queue",
-        meta: "#76 / open / alice",
-        level: "medium",
-      },
-      {
-        title: "fix: prevent empty key material export",
-        meta: "#73 / merged / charlie",
-        level: "low",
-      },
-      {
-        title: "feat: add release provenance badges",
-        meta: "#71 / open / bob",
-      },
-    ],
-  },
-  {
-    id: "cloudshield-core",
-    fullName: "cloudshield/core",
-    description:
-      "Cloud runtime posture scanner for CI and deployment pipelines.",
-    language: "Go",
-    license: "MIT",
-    defaultBranch: "main",
-    firstSeen: "2024-05",
-    lastSync: "2026-03-21",
-    riskLevel: "medium",
-    riskScore: 61,
-    stars: 2568,
-    forks: 420,
-    openIssues: 22,
-    openPrs: 8,
-    contributors: 13,
-    commitPerWeek: 6.1,
-    activeWeekRatio: 83,
-    collabIndex: 9,
-    communityDelta: 97,
-    issueResponseHours: 11.3,
-    prBacklog: 8,
-    entityCount: 84,
-    tags: ["metadata", "collaboration"],
-    recentCommits: [
-      {
-        title: "feat: scanner baseline for multi-region",
-        meta: "1fa9b1e / nina / 2026-03-19",
-        level: "medium",
-      },
-      {
-        title: "fix: retry policy for failed policy fetch",
-        meta: "2ad31bb / oscar / 2026-03-16",
-        level: "low",
-      },
-      {
-        title: "chore: release notes refresh",
-        meta: "6aa14fe / lee / 2026-03-12",
-      },
-    ],
-    openIssuesPreview: [
-      {
-        title: "Scanner misses private mirror in fallback mode",
-        meta: "#87 / open / oscar",
-        level: "medium",
-      },
-      {
-        title: "Policy bundle update lag",
-        meta: "#84 / open / nina",
-      },
-      {
-        title: "Region label formatting mismatch",
-        meta: "#79 / open / lee",
-        level: "low",
-      },
-    ],
-    prsPreview: [
-      {
-        title: "perf: cache policy compilation results",
-        meta: "#55 / merged / lee",
-        level: "low",
-      },
-      {
-        title: "feat: expose scan profile summary",
-        meta: "#57 / open / nina",
-        level: "medium",
-      },
-      {
-        title: "fix: retry jitter overflow",
-        meta: "#58 / open / oscar",
-      },
-    ],
-  },
-  {
-    id: "auditkit-web",
-    fullName: "auditkit/web",
-    description:
-      "Web console for incident timelines, owners, and evidence snapshots.",
-    language: "TypeScript",
-    license: "BSD-3-Clause",
-    defaultBranch: "release",
-    firstSeen: "2024-09",
-    lastSync: "2026-03-22",
-    riskLevel: "high",
-    riskScore: 74,
-    stars: 1830,
-    forks: 240,
-    openIssues: 41,
-    openPrs: 14,
-    contributors: 15,
-    commitPerWeek: 7.6,
-    activeWeekRatio: 75,
-    collabIndex: 13,
-    communityDelta: 163,
-    issueResponseHours: 18.7,
-    prBacklog: 14,
-    entityCount: 109,
-    tags: ["community", "observation"],
-    recentCommits: [
-      {
-        title: "feat: evidence panel with source badges",
-        meta: "74da9f0 / yuki / 2026-03-21",
-        level: "high",
-      },
-      {
-        title: "fix: remove stale permission from team map",
-        meta: "72ba10c / sam / 2026-03-18",
-        level: "medium",
-      },
-      {
-        title: "style: compact owner summary card",
-        meta: "14ca919 / tom / 2026-03-12",
-      },
-    ],
-    openIssuesPreview: [
-      {
-        title: "User role badge not aligned in mobile drawer",
-        meta: "#219 / open / tom",
-        level: "low",
-      },
-      {
-        title: "Invite token flow needs confirmation state",
-        meta: "#221 / open / yuki",
-        level: "medium",
-      },
-      {
-        title: "Activity timeline filter reset bug",
-        meta: "#223 / open / sam",
-      },
-    ],
-    prsPreview: [
-      {
-        title: "fix: harden invite token verification",
-        meta: "#144 / open / yuki",
-        level: "high",
-      },
-      {
-        title: "feat: compact evidence stream layout",
-        meta: "#145 / open / sam",
-        level: "medium",
-      },
-      {
-        title: "chore: release drawer cleanup",
-        meta: "#142 / merged / tom",
-        level: "low",
-      },
-    ],
-  },
-  {
-    id: "gatekeeper-engine",
-    fullName: "gatekeeper/engine",
-    description:
-      "Policy decision engine and metadata adapters for CI workflows.",
-    language: "Rust",
-    license: "Apache-2.0",
-    defaultBranch: "main",
-    firstSeen: "2024-01",
-    lastSync: "2026-03-20",
-    riskLevel: "low",
-    riskScore: 48,
-    stars: 4112,
-    forks: 701,
-    openIssues: 17,
-    openPrs: 6,
-    contributors: 21,
-    commitPerWeek: 4.8,
-    activeWeekRatio: 67,
-    collabIndex: 8,
-    communityDelta: -12,
-    issueResponseHours: 7.8,
-    prBacklog: 6,
-    entityCount: 72,
-    tags: ["stable", "metadata"],
-    recentCommits: [
-      {
-        title: "refactor: isolate policy resolver context",
-        meta: "ab89cce / marta / 2026-03-18",
-        level: "medium",
-      },
-      {
-        title: "feat: export policy graph metadata",
-        meta: "5cf77de / zoe / 2026-03-14",
-        level: "low",
-      },
-      {
-        title: "fix: summary panel edge case",
-        meta: "ae77cf2 / ian / 2026-03-10",
-      },
-    ],
-    openIssuesPreview: [
-      {
-        title: "Rule conflict not reported in summary panel",
-        meta: "#64 / open / ian",
-        level: "medium",
-      },
-      {
-        title: "Summary export misses labels",
-        meta: "#61 / open / marta",
-      },
-      {
-        title: "Graph diff viewer placeholder",
-        meta: "#59 / open / zoe",
-        level: "low",
-      },
-    ],
-    prsPreview: [
-      {
-        title: "feat: export policy graph metadata",
-        meta: "#39 / merged / zoe",
-        level: "low",
-      },
-      {
-        title: "fix: adapter metadata ordering",
-        meta: "#40 / open / marta",
-        level: "medium",
-      },
-      {
-        title: "perf: policy cache warmup",
-        meta: "#41 / open / ian",
-      },
-    ],
-  },
-];
+type HomeRepoCandidate = {
+  repoId: number;
+  platform: string;
+  fullName: string;
+  description: string;
+  htmlUrl: string | null;
+  visibility: string;
+  license: string;
+  stars: number;
+  forks: number;
+  openIssues: number;
+  updatedAt: string;
+  lastSync: string;
+  projectPortrait: ProjectPortraitResult;
+};
 
-const homeFilterOrder: Array<{ label: string; value: HomeSortKey }> = [
-  { label: "Stars", value: "stars" },
-  { label: "Activity", value: "activity" },
-  { label: "Collaboration", value: "collab" },
-  { label: "Community", value: "community" },
-  { label: "Updated", value: "updated" },
-];
+const HOME_FILTERS: HomeSortKey[] = ["stars", "activity", "collab", "community", "updated"];
+const HOME_CARD_LIMIT = 6;
+const HOME_RECOMMENDATION_REVALIDATE_SECONDS = 300;
 
-function formatCompactNumber(value: number) {
-  if (value >= 1000) {
-    return `${(value / 1000)
-      .toFixed(value >= 10000 ? 0 : 1)
-      .replace(/\.0$/, "")}k`;
-  }
-
-  return String(value);
+function buildDisplayRepoTags(
+  repo: { projectPortrait: ProjectPortraitResult; topics?: string[] },
+  locale: Locale
+) {
+  return [
+    locale === "en"
+      ? `Trust ${repo.projectPortrait.trustLevel}`
+      : `可信 ${repo.projectPortrait.trustLevel}`,
+    locale === "en"
+      ? `Risk ${repo.projectPortrait.riskLevel}`
+      : `风险 ${repo.projectPortrait.riskLevel}`,
+    ...(repo.topics ?? []).slice(0, 2),
+  ];
 }
 
-function formatRepoLabel(repoId: string) {
-  return repoId.replace(/-/g, "/");
-}
-
-function formatDelta(value: number) {
-  return `${value > 0 ? "+" : ""}${value}`;
-}
-
-function getFallbackRepo(repoId: string): RawRepoSource {
-  const label = formatRepoLabel(repoId);
-
-  return {
-    ...placeholderRepos[0],
-    id: repoId,
-    fullName: label,
-    description:
-      "Placeholder repository generated for route preview before API integration.",
-  };
-}
-
-function getRepoSource(repoId: string) {
-  return (
-    placeholderRepos.find((repo) => repo.id === repoId) ?? getFallbackRepo(repoId)
-  );
-}
-
-function getSortValue(repo: RawRepoSource, sort: HomeSortKey) {
+function sortValue(sort: HomeSortKey, repo: HomeRepoCandidate) {
   switch (sort) {
     case "activity":
-      return repo.commitPerWeek;
+      return repo.projectPortrait.commitFrequency;
     case "collab":
-      return repo.prBacklog;
+      return repo.projectPortrait.prBacklog;
     case "community":
-      return repo.communityDelta;
+      return repo.projectPortrait.communityStarDelta;
     case "updated":
-      return Date.parse(repo.lastSync);
+      return Date.parse(repo.updatedAt || repo.lastSync || "");
     case "stars":
     default:
       return repo.stars;
   }
 }
 
-export function getHomePageViewModel(
-  sort: HomeSortKey = "stars"
-): HomePageViewModel {
-  const repositories = [...placeholderRepos].sort(
-    (left, right) => getSortValue(right, sort) - getSortValue(left, sort)
+function firstRepoByMetric<T>(repos: T[], score: (repo: T) => number) {
+  return [...repos].sort((left, right) => score(right) - score(left))[0];
+}
+
+function buildHomeInsights(repos: HomeRepoCandidate[], locale: Locale): InsightCardViewModel[] {
+  const mostActive = firstRepoByMetric(repos, (repo) => repo.projectPortrait.commitFrequency);
+  const mostIssues = firstRepoByMetric(repos, (repo) => repo.openIssues);
+  const mostBacklog = firstRepoByMetric(repos, (repo) => repo.projectPortrait.prBacklog);
+  const strongestCommunity = firstRepoByMetric(
+    repos,
+    (repo) => repo.projectPortrait.communityStarDelta
   );
 
-  const mostActive = [...placeholderRepos].sort(
-    (left, right) => right.commitPerWeek - left.commitPerWeek
-  )[0];
-  const mostIssues = [...placeholderRepos].sort(
-    (left, right) => right.openIssues - left.openIssues
-  )[0];
-  const mostBacklog = [...placeholderRepos].sort(
-    (left, right) => right.prBacklog - left.prBacklog
-  )[0];
-  const strongestCommunity = [...placeholderRepos].sort(
-    (left, right) => right.communityDelta - left.communityDelta
-  )[0];
+  const cards: InsightCardViewModel[] = [];
+
+  if (mostActive) {
+    cards.push({
+      title: locale === "en" ? "Active This Week" : "本周活跃仓库",
+      value: mostActive.fullName,
+      description:
+        locale === "en"
+          ? `${formatNumber(mostActive.projectPortrait.commitFrequency)} commits per week from the latest project portrait.`
+          : `最新项目画像显示每周 ${formatNumber(mostActive.projectPortrait.commitFrequency)} 次提交。`,
+      href: `/repo/${mostActive.repoId}/overview`,
+    });
+  }
+
+  if (mostIssues) {
+    cards.push({
+      title: locale === "en" ? "Issue Activity Watch" : "Issue 活跃观察",
+      value: mostIssues.fullName,
+      description:
+        locale === "en"
+          ? `${formatCompactNumber(mostIssues.openIssues)} open issues from repository metadata.`
+          : `仓库 metadata 中共有 ${formatCompactNumber(mostIssues.openIssues)} 个 open issue。`,
+      href: `/repo/${mostIssues.repoId}/overview`,
+    });
+  }
+
+  if (mostBacklog) {
+    cards.push({
+      title: locale === "en" ? "PR Backlog Watch" : "PR Backlog 观察",
+      value: mostBacklog.fullName,
+      description:
+        locale === "en"
+          ? `${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} open PR backlog from the portrait snapshot.`
+          : `画像快照中有 ${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} 个打开的 PR backlog。`,
+      href: `/repo/${mostBacklog.repoId}/risk`,
+    });
+  }
+
+  if (strongestCommunity) {
+    cards.push({
+      title: locale === "en" ? "Community Growth Watch" : "社区增长观察",
+      value: strongestCommunity.fullName,
+      description:
+        locale === "en"
+          ? `${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)} star delta over the portrait observation window.`
+          : `画像观测窗口内 Star 增量为 ${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)}。`,
+      href: `/repo/${strongestCommunity.repoId}/overview`,
+    });
+  }
+
+  return cards;
+}
+
+async function loadHomeRepoCandidate(project: ProjectItem): Promise<HomeRepoCandidate | null> {
+  const [repository, portrait] = await Promise.all([
+    fetchRepository(project.repo_id, { platform: project.platform }),
+    fetchLatestProjectPortrait(project.repo_id, { platform: project.platform }),
+  ]);
+
+  if (!repository) {
+    return null;
+  }
 
   return {
-    currentSort: sort,
-    filters: homeFilterOrder.map((filter) => ({
-      ...filter,
-      href: filter.value === "stars" ? "/" : `/?sort=${filter.value}`,
-      selected: filter.value === sort,
-    })),
-    insights: [
-      {
-        title: "Active This Week",
-        value: mostActive.fullName,
-        description: `${mostActive.commitPerWeek} commits/week placeholder signal for activity-focused discovery.`,
-        href: `/repo/${mostActive.id}/overview`,
-      },
-      {
-        title: "Issue Activity Watch",
-        value: mostIssues.fullName,
-        description: `${mostIssues.openIssues} open issues placeholder signal for issue-focused discovery.`,
-        href: `/repo/${mostIssues.id}/overview`,
-      },
-      {
-        title: "PR Backlog Watch",
-        value: mostBacklog.fullName,
-        description: `${mostBacklog.prBacklog} pending PRs placeholder signal for collaboration pressure.`,
-        href: `/repo/${mostBacklog.id}/overview`,
-      },
-      {
-        title: "Community Growth Watch",
-        value: strongestCommunity.fullName,
-        description: `${formatDelta(
-          strongestCommunity.communityDelta
-        )} community delta placeholder signal for growth view.`,
-        href: `/repo/${strongestCommunity.id}/overview`,
-      },
-    ],
-    repositories: repositories.map((repo) => ({
-      name: repo.fullName,
-      description: repo.description,
-      href: `/repo/${repo.id}/overview`,
-      language: repo.language,
-      license: repo.license,
-      stars: formatCompactNumber(repo.stars),
-      forks: String(repo.forks),
-      issues: String(repo.openIssues),
-      prs: String(repo.openPrs),
-      contributors: String(repo.contributors),
-      tags: [
-        "Placeholder",
-        `Commit/W ${repo.commitPerWeek}`,
-        `Delta ${formatDelta(repo.communityDelta)}`,
-      ],
-    })),
+    repoId: project.repo_id,
+    platform: project.platform,
+    fullName: project.full_name ?? repository.full_name ?? `repo/${project.repo_id}`,
+    description: repository.description ?? "Repository metadata snapshot.",
+    htmlUrl: project.html_url ?? repository.html_url ?? null,
+    visibility: repository.visibility ?? "public",
+    license: repository.key ?? "unknown",
+    stars: repository.stargazers_count ?? 0,
+    forks: repository.forks_count ?? 0,
+    openIssues: repository.open_issues_count ?? 0,
+    updatedAt: repository.updated_at ?? "",
+    lastSync: repository.crawled_at ?? repository.updated_at ?? "",
+    projectPortrait: mapProjectPortrait(portrait),
   };
 }
 
-export function getRepoSidebarViewModel(repoId: string): RepoSidebarViewModel {
-  const repo = getRepoSource(repoId);
+const loadCachedHomeRepoUniverse = unstable_cache(
+  async (platform: string) => {
+    const projects = await fetchAllProjects({
+      pageSize: 100,
+      platform,
+    });
+
+    const uniqueProjects = new Map<number, ProjectItem>();
+    for (const project of projects) {
+      if (!uniqueProjects.has(project.repo_id)) {
+        uniqueProjects.set(project.repo_id, project);
+      }
+    }
+
+    const settled = await Promise.allSettled(
+      [...uniqueProjects.values()].map((project) => loadHomeRepoCandidate(project))
+    );
+
+    return settled
+      .filter(
+        (
+          result
+        ): result is PromiseFulfilledResult<HomeRepoCandidate | null> => result.status === "fulfilled"
+      )
+      .map((result) => result.value)
+      .filter((item): item is HomeRepoCandidate => Boolean(item));
+  },
+  ["home-repo-candidates"],
+  {
+    revalidate: HOME_RECOMMENDATION_REVALIDATE_SECONDS,
+  }
+);
+
+export async function getHomePageViewModel(
+  sort: HomeSortKey = "stars",
+  locale: Locale = "zh-CN"
+): Promise<HomePageViewModel> {
+  const t = getDictionary(locale);
+
+  try {
+    const repos = await loadCachedHomeRepoUniverse(getPlatform());
+    if (!repos.length) {
+      throw new Error(locale === "en" ? "No repositories available." : "没有可用仓库。");
+    }
+
+    const ordered = [...repos]
+      .sort((left, right) => sortValue(sort, right) - sortValue(sort, left))
+      .slice(0, HOME_CARD_LIMIT);
+
+    const contributorEntries = await Promise.all(
+      ordered.map(async (repo) => ({
+        repoId: repo.repoId,
+        count:
+          (
+            await fetchRepositoryUsers(repo.repoId, {
+              pageSize: 100,
+              platform: repo.platform,
+            }).catch(() => null)
+          )?.data?.length ?? null,
+      }))
+    );
+
+    const contributorCounts = new Map(
+      contributorEntries.map((entry) => [entry.repoId, entry.count] as const)
+    );
+
+    return {
+      currentSort: sort,
+      filters: HOME_FILTERS.map((value) => ({
+        label: t.home.filters[value],
+        value,
+        href: value === "stars" ? "/" : `/?sort=${value}`,
+        selected: value === sort,
+      })),
+      insights: buildHomeInsights(repos, locale),
+      repositories: ordered.map((repo) => ({
+        name: repo.fullName,
+        description: repo.description,
+        href: `/repo/${repo.repoId}/overview`,
+        language: repo.visibility,
+        license: repo.license,
+        stars: formatCompactNumber(repo.stars),
+        forks: formatCompactNumber(repo.forks),
+        issues: formatCompactNumber(repo.openIssues),
+        prs: formatNumber(repo.projectPortrait.prBacklog, 0),
+        contributors:
+          contributorCounts.get(repo.repoId) === null ||
+          contributorCounts.get(repo.repoId) === undefined
+            ? t.common.noData
+            : formatNumber(contributorCounts.get(repo.repoId) ?? 0, 0),
+        tags: [
+          repo.projectPortrait.riskLevel.toUpperCase(),
+          ...buildDisplayRepoTags(repo, locale),
+          locale === "en"
+            ? `Commit/W ${formatNumber(repo.projectPortrait.commitFrequency)}`
+            : `周提交 ${formatNumber(repo.projectPortrait.commitFrequency)}`,
+        ],
+      })),
+      usingLiveData: true,
+    };
+  } catch (error) {
+    return {
+      currentSort: sort,
+      filters: HOME_FILTERS.map((value) => ({
+        label: t.home.filters[value],
+        value,
+        href: value === "stars" ? "/" : `/?sort=${value}`,
+        selected: value === sort,
+      })),
+      insights: [],
+      repositories: [],
+      usingLiveData: false,
+      errorMessage:
+        error instanceof Error ? error.message : locale === "en" ? "API request failed." : "接口请求失败。",
+    };
+  }
+}
+
+export async function getRepoSidebarViewModel(
+  repoId: string,
+  locale: Locale = "zh-CN"
+): Promise<RepoSidebarViewModel> {
+  const repo = await loadRepoAggregate(repoId, getPlatform());
+  const t = getDictionary(locale);
 
   return {
     title: repo.fullName,
     description: repo.description,
-    pills: [repo.language, repo.license, repo.defaultBranch],
+    pills: [repo.visibility, repo.license, repo.defaultBranch],
     repositoryStats: [
-      { label: "Stars", value: formatCompactNumber(repo.stars) },
-      { label: "Forks", value: String(repo.forks) },
-      { label: "Open Issues", value: String(repo.openIssues) },
-      { label: "Open PRs", value: String(repo.openPrs) },
-      { label: "Last Sync", value: repo.lastSync },
+      { label: t.home.filters.stars, value: formatCompactNumber(repo.stars) },
+      { label: locale === "en" ? "Forks" : "Fork", value: formatCompactNumber(repo.forks) },
+      { label: locale === "en" ? "Watchers" : "关注者", value: formatCompactNumber(repo.watchers) },
+      {
+        label: locale === "en" ? "Open Issues" : "Open Issue",
+        value: formatCompactNumber(repo.openIssues),
+      },
+      {
+        label: locale === "en" ? "Last Sync" : "最近同步",
+        value: formatDate(repo.lastSync) || t.common.unavailable,
+      },
     ],
     portraitStats: [
-      { label: "Level", value: repo.riskLevel.toUpperCase() },
-      { label: "Score", value: String(repo.riskScore) },
-      { label: "Commit / Week", value: String(repo.commitPerWeek) },
-      { label: "Active Weeks", value: `${repo.activeWeekRatio}%` },
+      {
+        label: locale === "en" ? "Trust Level" : "可信等级",
+        value: repo.projectPortrait.trustLevel,
+      },
+      {
+        label: locale === "en" ? "Risk Score" : "风险分",
+        value: `${repo.projectPortrait.riskScorePercent}`,
+      },
+      {
+        label: locale === "en" ? "Commit / Week" : "周提交频率",
+        value: formatNumber(repo.projectPortrait.commitFrequency),
+      },
+      {
+        label: locale === "en" ? "Assessed At" : "评估时间",
+        value: formatDate(repo.projectPortrait.assessedAt) || t.common.unavailable,
+      },
     ],
-    tags: repo.tags,
-    riskLevel: repo.riskLevel,
+    tags: buildDisplayRepoTags(repo, locale),
+    riskLevel: repo.projectPortrait.riskLevel,
   };
 }
 
-export function getRepoOverviewViewModel(
-  repoId: string
-): RepoOverviewViewModel {
-  const repo = getRepoSource(repoId);
+export async function getRepoOverviewViewModel(
+  repoId: string,
+  locale: Locale = "zh-CN"
+): Promise<RepoOverviewViewModel> {
+  const repo = await loadRepoAggregate(repoId, getPlatform());
+  const t = getDictionary(locale);
+  const [recentCommits, issuesPage, prsPage] = await Promise.all([
+    loadCommitPreviewItems(repo.repoId, repoId, repo.platform, locale),
+    fetchIssues(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }),
+    fetchPullRequests(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }),
+  ]);
+  const [issueUsers, prUsers] = await Promise.all([
+    Promise.all(
+      (issuesPage.data ?? [])
+        .slice(0, 3)
+        .map((item) => buildIssueRelatedUsers(item, repoId, repo.platform, locale))
+    ),
+    Promise.all(
+      (prsPage.data ?? [])
+        .slice(0, 3)
+        .map((item) => buildPullRequestRelatedUsers(item, repoId, repo.platform, locale))
+    ),
+  ]);
+
+  const openIssues = (issuesPage.data ?? []).slice(0, 3).map((item, index) => ({
+    title: item.title ?? `Issue #${item.number ?? item.id}`,
+    meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
+      formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
+    }`,
+    level: mapIssueStateToLevel(item.state),
+    href: `/repo/${repoId}/issues/${item.id}`,
+    relatedUsers: issueUsers[index],
+  }));
+
+  const pullRequests = (prsPage.data ?? []).slice(0, 3).map((item, index) => ({
+    title: item.title ?? `PR #${item.number ?? item.id}`,
+    meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
+      formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
+    }`,
+    level: mapPullRequestStateToLevel(item.state, item.merged_at),
+    href: `/repo/${repoId}/prs/${item.id}`,
+    relatedUsers: prUsers[index],
+  }));
+
+  const observationLabel =
+    getObservationWindow({
+      window_start: repo.projectPortrait.windowStart,
+      window_end: repo.projectPortrait.windowEnd,
+      effective_window_days: repo.projectPortrait.effectiveWindowDays,
+    }).label || (locale === "en" ? "Observation window unavailable" : "暂无观测窗口");
 
   return {
     title: repo.fullName,
     description: repo.description,
     pills: [
-      repo.language,
+      repo.visibility,
       repo.license,
       repo.defaultBranch,
-      `First Seen: ${repo.firstSeen}`,
-      `Last Sync: ${repo.lastSync}`,
+      locale === "en"
+        ? `Created: ${formatDate(repo.createdAt) || t.common.unavailable}`
+        : `创建于：${formatDate(repo.createdAt) || t.common.unavailable}`,
+      locale === "en"
+        ? `Updated: ${formatDate(repo.updatedAt) || t.common.unavailable}`
+        : `更新于：${formatDate(repo.updatedAt) || t.common.unavailable}`,
     ],
-    riskLevel: repo.riskLevel,
+    htmlUrl: repo.htmlUrl || null,
+    riskLevel: repo.projectPortrait.riskLevel,
     summaryStats: [
-      { label: "Stars", value: formatCompactNumber(repo.stars) },
-      { label: "Forks", value: String(repo.forks) },
-      { label: "Open Issues", value: String(repo.openIssues) },
-      { label: "Open PRs", value: String(repo.openPrs) },
-      { label: "Contributors", value: String(repo.contributors) },
+      { label: t.home.filters.stars, value: formatCompactNumber(repo.stars) },
+      { label: locale === "en" ? "Forks" : "Fork", value: formatCompactNumber(repo.forks) },
+      { label: locale === "en" ? "Watchers" : "关注者", value: formatCompactNumber(repo.watchers) },
+      {
+        label: locale === "en" ? "Subscribers" : "订阅者",
+        value: formatCompactNumber(repo.subscribers),
+      },
+      {
+        label: locale === "en" ? "Open Issues" : "Open Issue",
+        value: formatCompactNumber(repo.openIssues),
+      },
     ],
     portraitSummary: [
-      { label: "Commit / Week", value: String(repo.commitPerWeek) },
-      { label: "Active Week Ratio", value: `${repo.activeWeekRatio}%` },
-      { label: "Collab Index", value: String(repo.collabIndex) },
-      { label: "Community Delta", value: formatDelta(repo.communityDelta) },
+      {
+        label: locale === "en" ? "Commit / Week" : "周提交频率",
+        value: formatNumber(repo.projectPortrait.commitFrequency),
+      },
+      {
+        label: locale === "en" ? "Active Week Ratio" : "活跃周占比",
+        value: formatPercent(repo.projectPortrait.activeWeekRatio, 1),
+      },
+      {
+        label: locale === "en" ? "Collab Index" : "协作指数",
+        value: formatNumber(repo.projectPortrait.collabIndex, 0),
+      },
+      {
+        label: locale === "en" ? "Star Delta" : "Star 增量",
+        value: formatDelta(repo.projectPortrait.communityStarDelta),
+      },
     ],
-    recentCommits: repo.recentCommits,
-    openIssues: repo.openIssuesPreview,
-    pullRequests: repo.prsPreview,
+    windowLabel: observationLabel,
+    timeline: repo.timeline,
+    recentCommits,
+    openIssues,
+    pullRequests,
   };
 }
 
-export function getRepoRiskViewModel(repoId: string): RepoRiskViewModel {
-  const repo = getRepoSource(repoId);
+export async function getRepoRiskViewModel(
+  repoId: string,
+  locale: Locale = "zh-CN"
+): Promise<RepoRiskViewModel> {
+  const repo = await loadRepoAggregate(repoId, getPlatform());
+  const t = getDictionary(locale);
 
   return {
     title: repo.fullName,
     description: repo.description,
-    riskLevel: repo.riskLevel,
-    tags: repo.tags,
+    riskLevel: repo.projectPortrait.riskLevel,
+    tags: buildDisplayRepoTags(repo, locale),
     summaryStats: [
-      { label: "Risk Score", value: String(repo.riskScore) },
-      { label: "Entity Count", value: String(repo.entityCount) },
-      { label: "Contributors", value: String(repo.contributors) },
-      { label: "Stars", value: formatCompactNumber(repo.stars) },
+      {
+        label: locale === "en" ? "Risk Score" : "风险分",
+        value: `${repo.projectPortrait.riskScorePercent}`,
+      },
+      {
+        label: locale === "en" ? "Trust Level" : "可信等级",
+        value: repo.projectPortrait.trustLevel,
+      },
+      {
+        label: locale === "en" ? "Assessed At" : "评估时间",
+        value: formatDate(repo.projectPortrait.assessedAt) || t.common.unavailable,
+      },
+      {
+        label: locale === "en" ? "Window" : "观测窗口",
+        value:
+          locale === "en"
+            ? `${repo.projectPortrait.effectiveWindowDays} days`
+            : `${repo.projectPortrait.effectiveWindowDays} 天`,
+      },
     ],
     snapshots: [
       {
-        label: "Commit / Week",
-        value: String(repo.commitPerWeek),
-        level: repo.commitPerWeek >= 8 ? "high" : "medium",
+        label: locale === "en" ? "Commit / Week" : "周提交频率",
+        value: formatNumber(repo.projectPortrait.commitFrequency),
+        level: repo.projectPortrait.commitFrequency >= 8 ? "high" : "medium",
       },
       {
-        label: "Active Week Ratio",
-        value: `${repo.activeWeekRatio}%`,
-        level: repo.activeWeekRatio >= 80 ? "low" : "medium",
+        label: locale === "en" ? "Active Week Ratio" : "活跃周占比",
+        value: formatPercent(repo.projectPortrait.activeWeekRatio, 1),
+        level: repo.projectPortrait.activeWeekRatio >= 80 ? "low" : "medium",
       },
       {
-        label: "Collab Index",
-        value: String(repo.collabIndex),
-        level: repo.collabIndex >= 12 ? "medium" : "low",
+        label: locale === "en" ? "Collab Index" : "协作指数",
+        value: formatNumber(repo.projectPortrait.collabIndex, 0),
+        level: repo.projectPortrait.collabIndex >= 10 ? "medium" : "low",
       },
       {
-        label: "PR Backlog",
-        value: String(repo.prBacklog),
-        level: repo.prBacklog >= 12 ? "high" : "medium",
+        label: locale === "en" ? "PR Backlog" : "PR Backlog",
+        value: formatNumber(repo.projectPortrait.prBacklog, 0),
+        level: repo.projectPortrait.prBacklog >= 10 ? "high" : "medium",
       },
       {
-        label: "Issue Response",
-        value: `${repo.issueResponseHours}h`,
-        level: repo.issueResponseHours > 12 ? "high" : "low",
+        label: locale === "en" ? "Issue Response" : "Issue 首响",
+        value: `${formatNumber(repo.projectPortrait.issueResponseHours)}h`,
+        level: repo.projectPortrait.issueResponseHours > 24 ? "high" : "low",
       },
       {
-        label: "Community Delta",
-        value: formatDelta(repo.communityDelta),
-        level: repo.communityDelta >= 0 ? "low" : "medium",
+        label: locale === "en" ? "Star Delta" : "Star 增量",
+        value: formatDelta(repo.projectPortrait.communityStarDelta),
+        level: repo.projectPortrait.communityStarDelta >= 0 ? "low" : "medium",
       },
     ],
     dimensions: [
       {
-        title: "Activity",
+        title: t.repo.dimensions.activity,
         description:
-          "Repository update rhythm and continuity over the current observation window.",
+          locale === "en"
+            ? "Project portrait activity signals over the latest observation window."
+            : "基于最新观测窗口的项目活跃度信号。",
         metrics: [
           {
-            label: "Commit Frequency",
-            value: `${repo.commitPerWeek} / week`,
-            note: "Fixed 12-week window placeholder.",
-            level: repo.commitPerWeek >= 8 ? "high" : "medium",
+            label: locale === "en" ? "Commit Frequency" : "提交频率",
+            value:
+              locale === "en"
+                ? `${formatNumber(repo.projectPortrait.commitFrequency)} / week`
+                : `${formatNumber(repo.projectPortrait.commitFrequency)} / 周`,
+            note:
+              locale === "en"
+                ? "From project portrait commit_frequency."
+                : "来自项目画像中的 commit_frequency。",
+            level: repo.projectPortrait.commitFrequency >= 8 ? "high" : "medium",
           },
           {
-            label: "Active Week Ratio",
-            value: `${repo.activeWeekRatio}%`,
-            note: "Displayed as a percentage rather than a 0-1 ratio.",
-            level: repo.activeWeekRatio >= 80 ? "low" : "medium",
+            label: locale === "en" ? "Active Week Ratio" : "活跃周占比",
+            value: formatPercent(repo.projectPortrait.activeWeekRatio, 1),
+            note:
+              locale === "en"
+                ? "Converted from the portrait snapshot ratio."
+                : "由画像快照中的比例字段转换而来。",
+            level: repo.projectPortrait.activeWeekRatio >= 80 ? "low" : "medium",
           },
         ],
       },
       {
-        title: "Collaboration",
+        title: t.repo.dimensions.collaboration,
         description:
-          "Issue and pull request interaction density, response speed, and working load.",
+          locale === "en"
+            ? "Issue and PR signals extracted from the latest project portrait snapshot."
+            : "来自最新项目画像快照中的 Issue 与 PR 信号。",
         metrics: [
           {
-            label: "Collab Index",
-            value: String(repo.collabIndex),
-            note: "Approximate number of active submitters, PR authors, and reviewers.",
-            level: repo.collabIndex >= 12 ? "medium" : "low",
+            label: locale === "en" ? "Collab Index" : "协作指数",
+            value: formatNumber(repo.projectPortrait.collabIndex, 0),
+            note:
+              locale === "en"
+                ? "From project portrait collab_index."
+                : "来自项目画像中的 collab_index。",
+            level: repo.projectPortrait.collabIndex >= 10 ? "medium" : "low",
           },
           {
-            label: "Issue Response",
-            value: `${repo.issueResponseHours} hours`,
-            note: "Median first response placeholder value.",
-            level: repo.issueResponseHours > 12 ? "high" : "low",
+            label: locale === "en" ? "Issue Response" : "Issue 首响时长",
+            value:
+              locale === "en"
+                ? `${formatNumber(repo.projectPortrait.issueResponseHours)} hours`
+                : `${formatNumber(repo.projectPortrait.issueResponseHours)} 小时`,
+            note:
+              locale === "en"
+                ? "From issue_metrics.median_issue_response_hours."
+                : "来自 issue_metrics.median_issue_response_hours。",
+            level: repo.projectPortrait.issueResponseHours > 24 ? "high" : "low",
           },
           {
-            label: "PR Backlog",
-            value: String(repo.prBacklog),
-            note: "Open PR backlog count placeholder.",
-            level: repo.prBacklog >= 12 ? "high" : "medium",
+            label: locale === "en" ? "PR Backlog" : "PR 积压数",
+            value: formatNumber(repo.projectPortrait.prBacklog, 0),
+            note:
+              locale === "en"
+                ? "From pr_metrics.open_pr_backlog_count."
+                : "来自 pr_metrics.open_pr_backlog_count。",
+            level: repo.projectPortrait.prBacklog >= 10 ? "high" : "medium",
           },
         ],
       },
       {
-        title: "Community",
+        title: t.repo.dimensions.community,
         description:
-          "Snapshot popularity and short-window community movement placeholders.",
+          locale === "en"
+            ? "Current popularity and recent movement of the repository community."
+            : "仓库当前社区热度及最近一段时间的变化。",
         metrics: [
           {
-            label: "Stars",
+            label: t.home.filters.stars,
             value: formatCompactNumber(repo.stars),
-            note: "Current snapshot value.",
+            note: locale === "en" ? "From repository metadata." : "来自仓库 metadata。",
             level: repo.stars >= 3000 ? "low" : "medium",
           },
           {
-            label: "Community Delta",
-            value: formatDelta(repo.communityDelta),
-            note: "Recent community movement placeholder.",
-            level: repo.communityDelta >= 0 ? "low" : "medium",
+            label: locale === "en" ? "Community Star Delta" : "社区 Star 增量",
+            value: formatDelta(repo.projectPortrait.communityStarDelta),
+            note:
+              locale === "en"
+                ? "From the latest project portrait window."
+                : "来自最新项目画像观测窗口。",
+            level: repo.projectPortrait.communityStarDelta >= 0 ? "low" : "medium",
+          },
+          {
+            label: locale === "en" ? "Community Fork Delta" : "社区 Fork 增量",
+            value: formatDelta(repo.projectPortrait.communityForkDelta),
+            note:
+              locale === "en"
+                ? "From the latest project portrait window."
+                : "来自最新项目画像观测窗口。",
+            level: repo.projectPortrait.communityForkDelta >= 0 ? "low" : "medium",
           },
         ],
       },

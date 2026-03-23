@@ -1,9 +1,11 @@
 import {
-  RepoOverviewChartPlaceholder,
   RepoOverviewHero,
   RepoPreviewPanel,
   RepoSummaryStats,
+  RepoTimelineChart,
 } from "@/components/repo-ui";
+import { getRequestLocale } from "@/lib/locale-server";
+import { getDictionary } from "@/lib/ui-copy";
 import { getRepoOverviewViewModel } from "@/lib/repo-view-models";
 
 export default async function OverviewPage({
@@ -12,23 +14,23 @@ export default async function OverviewPage({
   params: Promise<{ repoId: string }>;
 }) {
   const { repoId } = await params;
-  const model = getRepoOverviewViewModel(repoId);
+  const locale = await getRequestLocale();
+  const t = getDictionary(locale);
+  const model = await getRepoOverviewViewModel(repoId, locale);
 
   return (
     <div className="repo-overview-shell">
-      <RepoOverviewHero repoId={repoId} model={model} />
+      <RepoOverviewHero repoId={repoId} model={model} locale={locale} />
 
       <RepoSummaryStats items={model.summaryStats} />
 
       <section className="card overview-portrait-summary">
         <div className="overview-section-head">
           <div>
-            <h3>Project Portrait Summary</h3>
-            <p className="muted">
-              Metadata and portrait metrics are now mapped through the frontend
-              view model instead of page-level hardcoded placeholders.
-            </p>
+            <h3>{t.repo.portraitSummary}</h3>
+            <p className="muted">{t.repo.portraitSummaryDescription}</p>
           </div>
+          <span className="badge">{model.windowLabel}</span>
         </div>
         <div className="overview-portrait-grid">
           {model.portraitSummary.map((item) => (
@@ -40,35 +42,32 @@ export default async function OverviewPage({
         </div>
       </section>
 
-      <RepoOverviewChartPlaceholder
-        description="The chart area is stable now; only the actual time-series interface remains to be connected."
-        caption="Series rendering will switch from placeholder bars to API-backed weekly points."
+      <RepoTimelineChart
+        title={t.repo.historyTitle}
+        description={t.repo.historyDescription}
+        caption={model.windowLabel}
+        points={model.timeline}
+        locale={locale}
       />
 
       <section className="overview-preview-grid">
         <RepoPreviewPanel
-          title="Recent Commits"
+          title={t.repo.recentCommits}
           href={`/repo/${repoId}/commits`}
-          items={model.recentCommits.map((item, index) => ({
-            ...item,
-            href: `/repo/${repoId}/commits/commit-${index + 1}`,
-          }))}
+          items={model.recentCommits}
+          locale={locale}
         />
         <RepoPreviewPanel
-          title="Open Issues"
+          title={t.repo.openIssues}
           href={`/repo/${repoId}/issues`}
-          items={model.openIssues.map((item, index) => ({
-            ...item,
-            href: `/repo/${repoId}/issues/issue-${index + 1}`,
-          }))}
+          items={model.openIssues}
+          locale={locale}
         />
         <RepoPreviewPanel
-          title="Pull Requests"
+          title={t.repo.pullRequests}
           href={`/repo/${repoId}/prs`}
-          items={model.pullRequests.map((item, index) => ({
-            ...item,
-            href: `/repo/${repoId}/prs/pr-${index + 1}`,
-          }))}
+          items={model.pullRequests}
+          locale={locale}
         />
       </section>
     </div>

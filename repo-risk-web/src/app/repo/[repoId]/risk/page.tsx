@@ -1,4 +1,6 @@
 import { RiskBadge } from "@/components/repo-ui";
+import { getRequestLocale } from "@/lib/locale-server";
+import { getDictionary } from "@/lib/ui-copy";
 import { getRepoRiskViewModel } from "@/lib/repo-view-models";
 
 export default async function RiskPage({
@@ -7,19 +9,21 @@ export default async function RiskPage({
   params: Promise<{ repoId: string }>;
 }) {
   const { repoId } = await params;
-  const model = getRepoRiskViewModel(repoId);
+  const locale = await getRequestLocale();
+  const t = getDictionary(locale);
+  const model = await getRepoRiskViewModel(repoId, locale);
 
   return (
     <div className="repo-overview-shell">
       <section className="card repo-hero-card">
         <div className="repo-hero-head">
           <div>
-            <div className="repo-kicker">Repository Portrait</div>
+            <div className="repo-kicker">{t.repo.repoPortrait}</div>
             <h2>{model.title}</h2>
             <p className="muted repo-hero-description">{model.description}</p>
           </div>
           <div className="hero-badge-stack">
-            <RiskBadge level={model.riskLevel} />
+            <RiskBadge level={model.riskLevel} locale={locale} />
           </div>
         </div>
         <div className="context-tags">
@@ -43,12 +47,8 @@ export default async function RiskPage({
       <section className="card">
         <div className="overview-section-head">
           <div>
-            <h3>Snapshot Metrics</h3>
-            <p className="muted">
-              This page now reads from the same adapter layer as the homepage
-              and overview page. The final change left is replacing these
-              placeholder values with API responses.
-            </p>
+            <h3>{t.repo.snapshotMetrics}</h3>
+            <p className="muted">{t.repo.snapshotMetricsDescription}</p>
           </div>
         </div>
         <div className="risk-snapshot-grid">
@@ -56,7 +56,7 @@ export default async function RiskPage({
             <article key={item.label} className="risk-snapshot-card">
               <div className="risk-snapshot-head">
                 <span className="muted">{item.label}</span>
-                <RiskBadge level={item.level} />
+                <RiskBadge level={item.level} locale={locale} />
               </div>
               <h4>{item.value}</h4>
             </article>
@@ -78,7 +78,7 @@ export default async function RiskPage({
                 <div key={metric.label} className="risk-metric-item">
                   <div className="risk-metric-head">
                     <strong>{metric.label}</strong>
-                    <RiskBadge level={metric.level} />
+                    <RiskBadge level={metric.level} locale={locale} />
                   </div>
                   <div className="risk-metric-value">{metric.value}</div>
                   <p className="muted">{metric.note}</p>
