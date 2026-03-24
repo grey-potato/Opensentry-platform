@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyStateCard, PaginationLink, RiskBadge } from "@/components/repo-ui";
+import { EmptyStateCard, PaginationLink } from "@/components/repo-ui";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
 import { getUserListPageViewModel } from "@/lib/entity-view-models";
@@ -9,14 +9,16 @@ export default async function UsersPage({
   searchParams,
 }: {
   params: Promise<{ repoId: string }>;
-  searchParams: Promise<{ cursor?: string; role?: string }>;
+  searchParams: Promise<{ page?: string; page_size?: string; page_chain?: string; role?: string }>;
 }) {
   const { repoId } = await params;
   const filters = await searchParams;
   const locale = await getRequestLocale();
   const t = getDictionary(locale);
   const model = await getUserListPageViewModel(repoId, {
-    cursor: filters.cursor,
+    page: filters.page,
+    pageSize: filters.page_size,
+    pageChain: filters.page_chain,
     role: filters.role,
   }, locale);
 
@@ -31,6 +33,11 @@ export default async function UsersPage({
         </div>
         <form className="entity-filter-form" method="get">
           <input name="role" placeholder={t.entities.users.filterRole} defaultValue={model.role} />
+          <select name="page_size" defaultValue={String(model.pageSize)}>
+            <option value="10">{locale === "en" ? "10 / page" : "10 / 页"}</option>
+            <option value="20">{locale === "en" ? "20 / page" : "20 / 页"}</option>
+            <option value="50">{locale === "en" ? "50 / page" : "50 / 页"}</option>
+          </select>
           <button type="submit">{t.common.apply}</button>
         </form>
       </section>
@@ -53,10 +60,9 @@ export default async function UsersPage({
                   <Link href={item.href}>{item.title}</Link>
                   <div className="muted">{item.subtitle}</div>
                 </div>
-                <RiskBadge level={item.portraitLevel} locale={locale} />
+                <span className="badge">{item.portraitLabel}</span>
               </div>
               <div className="entity-tag-row">
-                <span className="badge">{item.portraitLabel}</span>
                 {item.roles.map((role) => (
                   <span key={role} className="badge">
                     {role}
@@ -73,7 +79,7 @@ export default async function UsersPage({
         />
       )}
 
-      <PaginationLink nextHref={model.pagination.nextHref} locale={locale} />
+      <PaginationLink pagination={model.pagination} locale={locale} />
     </div>
   );
 }

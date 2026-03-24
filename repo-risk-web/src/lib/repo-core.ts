@@ -1,3 +1,4 @@
+import { cache } from "react";
 import {
   fetchCommits,
   fetchCommitPortrait,
@@ -26,6 +27,7 @@ export type PreviewItemViewModel = {
   title: string;
   meta: string;
   level?: RiskLevel;
+  badgeLabel?: string;
   href?: string;
   relatedUsers?: RelatedUserViewModel[];
 };
@@ -118,6 +120,9 @@ export type RepoAggregate = {
   projectPortrait: ProjectPortraitResult;
   timeline: RepoTimelinePointViewModel[];
 };
+
+export const DEFAULT_ENTITY_PAGE_SIZE = 10;
+export const ENTITY_PAGE_SIZE_OPTIONS = [10, 20, 50] as const;
 
 export function formatCompactNumber(value: number) {
   if (value >= 1000) {
@@ -289,16 +294,52 @@ export function buildPaginationHref(
   repoId: string,
   section: string,
   current: Record<string, string | undefined>,
-  nextCursor?: string | null
-) {
-  if (!nextCursor) {
-    return null;
+  options: {
+    page: number;
+    pageSize: number;
+    pageChain: Array<string | null>;
   }
-
+) {
   return buildRepoRoute(repoId, section, {
     ...current,
-    cursor: nextCursor,
+    page: String(options.page),
+    page_size: String(options.pageSize),
+    page_chain: serializePageChain(options.pageChain),
   });
+}
+
+export function normalizeEntityPage(value?: string | number | null) {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : 1;
+}
+
+export function normalizeEntityPageSize(value?: string | number | null) {
+  const numeric = Number(value);
+  return ENTITY_PAGE_SIZE_OPTIONS.includes(numeric as (typeof ENTITY_PAGE_SIZE_OPTIONS)[number])
+    ? numeric
+    : DEFAULT_ENTITY_PAGE_SIZE;
+}
+
+export function parsePageChain(value?: string | null) {
+  if (!value) {
+    return [null];
+  }
+
+  const items = value
+    .split("|")
+    .filter(Boolean)
+    .map((item) => (item === "~" ? null : decodeURIComponent(item)));
+
+  if (!items.length || items[0] !== null) {
+    items.unshift(null);
+  }
+
+  return items;
+}
+
+export function serializePageChain(cursors: Array<string | null>) {
+  const normalized = cursors.length ? cursors : [null];
+  return normalized.map((cursor) => (cursor === null ? "~" : encodeURIComponent(cursor))).join("|");
 }
 
 export function parseRepoId(repoId: string) {
@@ -636,16 +677,18 @@ export function formatShortDateLabel(value: string) {
   return value.length >= 10 ? value.slice(5) : value;
 }
 
-export async function loadRepoAggregate(
+const loadRepoAggregateInternal = async (
   repoId: string,
   platform: string
-): Promise<RepoAggregate> {
+): Promise<RepoAggregate> => {
   const numericRepoId = parseRepoId(repoId);
-  const [project, repository, portrait, history] = await Promise.all([
+  const [project, repository] = await Promise.all([
     fetchProject(numericRepoId, { platform }),
     fetchRepository(numericRepoId, { platform }),
-    fetchLatestProjectPortrait(numericRepoId, { platform }),
-    fetchRepositoryHistory(numericRepoId, { platform }),
+  ]);
+  const [portrait, history] = await Promise.all([
+    fetchLatestProjectPortrait(numericRepoId, { platform }).catch(() => null),
+    fetchRepositoryHistory(numericRepoId, { platform }).catch(() => []),
   ]);
 
   const fullName =
@@ -673,7 +716,9 @@ export async function loadRepoAggregate(
     projectPortrait: mapProjectPortrait(portrait),
     timeline: buildTimelinePoints(history),
   };
-}
+};
+
+export const loadRepoAggregate = cache(loadRepoAggregateInternal);
 
 export async function loadCommitPreviewItems(
   repoId: number,
@@ -703,7 +748,11 @@ export async function loadCommitPreviewItems(
       meta: `${formatShortSha(item.sha)} / ${formatDate(
         readString(item.author_info ?? undefined, "date") || item.crawled_at
       )}`,
-      level: portrait.riskLevel,
+      badgeLabel: portrait.available
+        ? portrait.trustLevel
+        : locale === "en"
+          ? "portrait unavailable"
+          : "暂无画像",
       href: `/repo/${routeRepoId}/commits/${item.sha}`,
       relatedUsers: relatedUsers[index],
     };

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { RiskBadge } from "@/components/repo-ui";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
 import { getCommitDetailPageViewModel } from "@/lib/entity-view-models";
@@ -22,9 +21,6 @@ export default async function CommitDetailPage({
             <div className="repo-kicker">{t.entities.commits.detail}</div>
             <h2>{model.title}</h2>
             <p className="muted repo-hero-description">{model.subtitle}</p>
-          </div>
-          <div className="hero-badge-stack">
-            <RiskBadge level={model.portraitRiskLevel} locale={locale} />
           </div>
         </div>
         <div className="inline-links">
@@ -61,11 +57,10 @@ export default async function CommitDetailPage({
 
       <section className="card">
         <div className="overview-section-head">
-            <div>
-              <h3>{model.portraitTitle}</h3>
-              <p className="muted">{t.entities.commits.portraitDescription}</p>
-            </div>
-          <RiskBadge level={model.portraitRiskLevel} locale={locale} />
+          <div>
+            <h3>{model.portraitTitle}</h3>
+            <p className="muted">{t.entities.commits.portraitDescription}</p>
+          </div>
         </div>
         <div className="detail-kv-grid">
           {model.portraitStats.map((item) => (

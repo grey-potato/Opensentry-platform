@@ -10,9 +10,12 @@ import {
   fetchPullRequests,
   fetchRepositoryUsers,
   fetchUser,
+  fetchUsersByLogin,
   getPlatform,
+  type UserItem,
 } from "@/lib/opensentry-api";
 import {
+  ENTITY_PAGE_SIZE_OPTIONS,
   buildCommitRelatedUsers,
   buildIssueRelatedUsers,
   buildPaginationHref,
@@ -26,9 +29,10 @@ import {
   formatShortSha,
   loadRepoAggregate,
   mapCommitPortrait,
-  mapIssueStateToLevel,
-  mapPullRequestStateToLevel,
   mapUserPortrait,
+  normalizeEntityPage,
+  normalizeEntityPageSize,
+  parsePageChain,
   readBoolean,
   readString,
   restLines,
@@ -40,6 +44,15 @@ import type { Locale } from "@/lib/locale";
 import { getBooleanLabel, getDictionary } from "@/lib/ui-copy";
 
 export type EntityPaginationViewModel = {
+  currentPage: number;
+  pageSize: number;
+  pageSizeOptions: number[];
+  pageLinks: Array<{
+    page: number;
+    href: string;
+    active: boolean;
+  }>;
+  prevHref: string | null;
   nextHref: string | null;
   hasMore: boolean;
 };
@@ -50,7 +63,7 @@ export type CommitListItemViewModel = {
   href: string;
   sha: string;
   portraitLabel: string;
-  portraitLevel: RiskLevel;
+  portraitAvailable: boolean;
   trustLevel: string;
   relatedUsers: RelatedUserViewModel[];
 };
@@ -64,6 +77,7 @@ export type CommitListPageViewModel = {
   authorId: string;
   sort: string;
   order: string;
+  pageSize: number;
 };
 
 export type CommitDetailPageViewModel = {
@@ -88,7 +102,7 @@ export type UserListItemViewModel = {
   href: string;
   roles: string[];
   portraitLabel: string;
-  portraitLevel: RiskLevel;
+  portraitAvailable: boolean;
 };
 
 export type UserListPageViewModel = {
@@ -98,6 +112,7 @@ export type UserListPageViewModel = {
   items: UserListItemViewModel[];
   pagination: EntityPaginationViewModel;
   role: string;
+  pageSize: number;
 };
 
 export type UserDetailPageViewModel = {
@@ -117,7 +132,7 @@ export type IssueListItemViewModel = {
   title: string;
   subtitle: string;
   href: string;
-  level: RiskLevel;
+  stateLabel: string;
   relatedUsers: RelatedUserViewModel[];
 };
 
@@ -128,6 +143,7 @@ export type IssueListPageViewModel = {
   items: IssueListItemViewModel[];
   pagination: EntityPaginationViewModel;
   state: string;
+  pageSize: number;
 };
 
 export type IssueDetailPageViewModel = {
@@ -143,7 +159,7 @@ export type PullRequestListItemViewModel = {
   title: string;
   subtitle: string;
   href: string;
-  level: RiskLevel;
+  stateLabel: string;
   relatedUsers: RelatedUserViewModel[];
 };
 
@@ -154,6 +170,7 @@ export type PullRequestListPageViewModel = {
   items: PullRequestListItemViewModel[];
   pagination: EntityPaginationViewModel;
   state: string;
+  pageSize: number;
 };
 
 export type PullRequestDetailPageViewModel = {
@@ -166,6 +183,7 @@ export type PullRequestDetailPageViewModel = {
 };
 
 export type SearchResultItemViewModel = {
+  kind: "repo" | "user";
   title: string;
   subtitle: string;
   href: string;
@@ -176,6 +194,19 @@ export type SearchPageViewModel = {
   query: string;
   usingLiveData: boolean;
   results: SearchResultItemViewModel[];
+  redirectHref?: string;
+};
+
+export type GlobalUserDetailPageViewModel = {
+  title: string;
+  subtitle: string;
+  backHref: string;
+  summaryStats: MetricItemViewModel[];
+  profileStats: MetricItemViewModel[];
+  portraitTitle: string;
+  portraitStats: MetricItemViewModel[];
+  scoreBreakdown: MetricItemViewModel[];
+  portraitAvailable: boolean;
 };
 
 function buildRepoSubtitle(
@@ -191,15 +222,123 @@ function userTypeLabel(type: string | null | undefined, locale: Locale) {
   return type ?? (locale === "en" ? "User" : "用户");
 }
 
+function buildUserProfileStats(
+  user: UserItem,
+  locale: Locale,
+  unavailable: string
+): MetricItemViewModel[] {
+  return [
+    { label: "Login", value: user.login ?? user.id },
+    { label: locale === "en" ? "Type" : "类型", value: user.type ?? unavailable },
+    {
+      label: locale === "en" ? "Created At" : "创建时间",
+      value: formatDate(user.created_at) || unavailable,
+    },
+    {
+      label: locale === "en" ? "Updated At" : "更新时间",
+      value: formatDate(user.updated_at) || unavailable,
+    },
+    { label: "Blog", value: user.blog ?? unavailable },
+    { label: "Email", value: user.email ?? unavailable },
+  ];
+}
+
+function resolveCursorPageState(
+  pageValue?: string,
+  pageSizeValue?: string,
+  pageChainValue?: string
+) {
+  const pageSize = normalizeEntityPageSize(pageSizeValue);
+  const requestedPage = normalizeEntityPage(pageValue);
+  const pageChain = parsePageChain(pageChainValue);
+
+  if (requestedPage > pageChain.length) {
+    return {
+      currentPage: 1,
+      pageSize,
+      pageChain: [null] as Array<string | null>,
+      cursor: null as string | null,
+    };
+  }
+
+  return {
+    currentPage: requestedPage,
+    pageSize,
+    pageChain,
+    cursor: pageChain[requestedPage - 1] ?? null,
+  };
+}
+
+function buildVisitedPageChain(
+  pageChain: Array<string | null>,
+  currentPage: number,
+  cursor: string | null
+) {
+  const visited = pageChain.slice(0, currentPage);
+  if (!visited.length) {
+    visited.push(null);
+  }
+  visited[0] = null;
+  visited[currentPage - 1] = cursor;
+  return visited;
+}
+
+function buildEntityPaginationViewModel(
+  repoId: string,
+  section: string,
+  filters: Record<string, string | undefined>,
+  currentPage: number,
+  pageSize: number,
+  visitedPageChain: Array<string | null>,
+  nextCursor?: string | null
+): EntityPaginationViewModel {
+  const pageLinks = visitedPageChain.map((_, index) => ({
+    page: index + 1,
+    href: buildPaginationHref(repoId, section, filters, {
+      page: index + 1,
+      pageSize,
+      pageChain: visitedPageChain,
+    }),
+    active: index + 1 === currentPage,
+  }));
+
+  return {
+    currentPage,
+    pageSize,
+    pageSizeOptions: [...ENTITY_PAGE_SIZE_OPTIONS],
+    pageLinks,
+    prevHref:
+      currentPage > 1
+        ? buildPaginationHref(repoId, section, filters, {
+            page: currentPage - 1,
+            pageSize,
+            pageChain: visitedPageChain,
+          })
+        : null,
+    nextHref: nextCursor
+      ? buildPaginationHref(repoId, section, filters, {
+          page: currentPage + 1,
+          pageSize,
+          pageChain: [...visitedPageChain, nextCursor],
+        })
+      : null,
+    hasMore: Boolean(nextCursor),
+  };
+}
+
 export async function getCommitListPageViewModel(
   repoId: string,
   {
-    cursor,
+    page,
+    pageSize,
+    pageChain,
     authorId,
     sort = "sha",
     order = "asc",
   }: {
-    cursor?: string;
+    page?: string;
+    pageSize?: string;
+    pageChain?: string;
     authorId?: string;
     sort?: string;
     order?: string;
@@ -208,9 +347,10 @@ export async function getCommitListPageViewModel(
 ): Promise<CommitListPageViewModel> {
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
+  const paginationState = resolveCursorPageState(page, pageSize, pageChain);
   const response = await fetchCommits(repo.repoId, {
-    pageSize: 12,
-    cursor,
+    pageSize: paginationState.pageSize,
+    cursor: paginationState.cursor ?? undefined,
     authorId,
     sort,
     order,
@@ -265,23 +405,30 @@ export async function getCommitListPageViewModel(
           : locale === "en"
             ? "Portrait unavailable"
             : "画像不可用",
-        portraitLevel: portrait.riskLevel,
+        portraitAvailable: portrait.available,
         trustLevel: portrait.trustLevel,
         relatedUsers: relatedUsers[index],
       };
     }),
     pagination: {
-      hasMore: response.pagination.has_more,
-      nextHref: buildPaginationHref(
+      ...buildEntityPaginationViewModel(
         repoId,
         "commits",
         { author_id: authorId, sort, order },
+        paginationState.currentPage,
+        paginationState.pageSize,
+        buildVisitedPageChain(
+          paginationState.pageChain,
+          paginationState.currentPage,
+          paginationState.cursor
+        ),
         response.pagination.next_cursor
       ),
     },
     authorId: authorId ?? "",
     sort,
     order,
+    pageSize: paginationState.pageSize,
   };
 }
 
@@ -370,14 +517,20 @@ export async function getCommitDetailPageViewModel(
 
 export async function getUserListPageViewModel(
   repoId: string,
-  { cursor, role }: { cursor?: string; role?: string },
+  {
+    page,
+    pageSize,
+    pageChain,
+    role,
+  }: { page?: string; pageSize?: string; pageChain?: string; role?: string },
   locale: Locale = "zh-CN"
 ): Promise<UserListPageViewModel> {
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
+  const paginationState = resolveCursorPageState(page, pageSize, pageChain);
   const response = await fetchRepositoryUsers(repo.repoId, {
-    pageSize: 12,
-    cursor,
+    pageSize: paginationState.pageSize,
+    cursor: paginationState.cursor ?? undefined,
     role,
     platform: repo.platform,
   });
@@ -422,13 +575,25 @@ export async function getUserListPageViewModel(
         : locale === "en"
           ? "Portrait unavailable"
           : "画像不可用",
-      portraitLevel: portrait.riskLevel,
+      portraitAvailable: portrait.available,
     })),
     pagination: {
-      hasMore: response.pagination.has_more,
-      nextHref: buildPaginationHref(repoId, "users", { role }, response.pagination.next_cursor),
+      ...buildEntityPaginationViewModel(
+        repoId,
+        "users",
+        { role },
+        paginationState.currentPage,
+        paginationState.pageSize,
+        buildVisitedPageChain(
+          paginationState.pageChain,
+          paginationState.currentPage,
+          paginationState.cursor
+        ),
+        response.pagination.next_cursor
+      ),
     },
     role: role ?? "",
+    pageSize: paginationState.pageSize,
   };
 }
 
@@ -439,15 +604,22 @@ export async function getUserDetailPageViewModel(
 ): Promise<UserDetailPageViewModel> {
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
-  const [user, portraitRaw] = await Promise.all([
-    fetchUser(userId, { platform: repo.platform }),
+  const [userRaw, portraitRaw] = await Promise.all([
+    fetchUser(userId, { platform: repo.platform }).catch(() => null),
     fetchLatestUserPortrait(userId, { platform: repo.platform }).catch(() => null),
   ]);
+  const user: UserItem =
+    userRaw ??
+    ({
+      id: userId,
+      login: userId,
+      crawled_at: "",
+    } as UserItem);
   const portrait = mapUserPortrait(portraitRaw);
 
   return {
-    title: user.login ?? user.name ?? user.id,
-    subtitle: `${repo.fullName} / ${userTypeLabel(user.type, locale)} / ${user.id}`,
+    title: user.login ?? user.name ?? userId,
+    subtitle: `${repo.fullName} / ${userTypeLabel(user.type, locale)} / ${userId}`,
     backHref: `/repo/${repoId}/users`,
     summaryStats: [
       {
@@ -468,7 +640,7 @@ export async function getUserDetailPageViewModel(
       },
     ],
     profileStats: [
-      { label: "Login", value: user.login ?? t.common.unavailable },
+      { label: "Login", value: user.login ?? userId },
       { label: locale === "en" ? "Type" : "类型", value: user.type ?? t.common.unavailable },
       {
         label: locale === "en" ? "Created At" : "创建时间",
@@ -514,16 +686,98 @@ export async function getUserDetailPageViewModel(
   };
 }
 
+export async function getGlobalUserDetailPageViewModel(
+  userId: string,
+  locale: Locale = "zh-CN"
+): Promise<GlobalUserDetailPageViewModel> {
+  const t = getDictionary(locale);
+  const [userRaw, portraitRaw] = await Promise.all([
+    fetchUser(userId, { platform: getPlatform() }).catch(() => null),
+    fetchLatestUserPortrait(userId, { platform: getPlatform() }).catch(() => null),
+  ]);
+  const user: UserItem =
+    userRaw ??
+    ({
+      id: userId,
+      login: userId,
+      crawled_at: "",
+    } as UserItem);
+  const portrait = mapUserPortrait(portraitRaw);
+
+  return {
+    title: user.login ?? user.name ?? userId,
+    subtitle:
+      locale === "en"
+        ? `Global user portrait / ${userTypeLabel(user.type, locale)} / ${userId}`
+        : `全局用户画像 / ${userTypeLabel(user.type, locale)} / ${userId}`,
+    backHref: `/search?q=${encodeURIComponent(user.login ?? userId)}`,
+    summaryStats: [
+      {
+        label: locale === "en" ? "Trust Level" : "可信等级",
+        value: portrait.available ? portrait.trustLevel : t.common.unavailable,
+      },
+      {
+        label: locale === "en" ? "Total Score" : "画像分值",
+        value: portrait.available ? formatNumber(portrait.totalScore) : t.common.noData,
+      },
+      {
+        label: locale === "en" ? "Public Repos" : "公开仓库",
+        value: formatNumber(user.public_repos ?? 0, 0),
+      },
+      {
+        label: locale === "en" ? "Public Gists" : "公开 Gist",
+        value: formatNumber(user.public_gists ?? 0, 0),
+      },
+    ],
+    profileStats: buildUserProfileStats(user, locale, t.common.unavailable),
+    portraitTitle: portrait.available
+      ? t.entities.users.portraitAvailable
+      : t.entities.users.portraitUnavailable,
+    portraitStats: portrait.available
+      ? [
+          {
+            label: locale === "en" ? "Trust Level" : "可信等级",
+            value: portrait.trustLevel,
+          },
+          {
+            label: locale === "en" ? "Assessed At" : "评估时间",
+            value: formatDateTime(portrait.assessedAt) || t.common.unavailable,
+          },
+          {
+            label: locale === "en" ? "Total Score" : "画像分值",
+            value: formatNumber(portrait.totalScore),
+          },
+        ]
+      : [
+          {
+            label: locale === "en" ? "Status" : "状态",
+            value:
+              locale === "en"
+                ? "No portrait result found for this user."
+                : "当前用户暂无画像结果。",
+          },
+        ],
+    scoreBreakdown: portrait.scoreBreakdown,
+    portraitAvailable: portrait.available,
+  };
+}
+
 export async function getIssueListPageViewModel(
   repoId: string,
-  { cursor, state }: { cursor?: string; state?: string },
+  {
+    page,
+    pageSize,
+    pageChain,
+    state,
+  }: { page?: string; pageSize?: string; pageChain?: string; state?: string },
   locale: Locale = "zh-CN"
 ): Promise<IssueListPageViewModel> {
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
+  const paginationState = resolveCursorPageState(page, pageSize, pageChain);
   const response = await fetchIssues(repo.repoId, {
-    pageSize: 12,
-    cursor,
+    pageSize: paginationState.pageSize,
+    cursor: paginationState.cursor ?? undefined,
     state,
     platform: repo.platform,
   });
@@ -557,14 +811,26 @@ export async function getIssueListPageViewModel(
         formatDate(issue.updated_at ?? issue.crawled_at) || t.common.unavailable
       }`,
       href: `/repo/${repoId}/issues/${issue.id}`,
-      level: mapIssueStateToLevel(issue.state),
+      stateLabel: issue.state ?? t.common.unknown,
       relatedUsers: relatedUsers[index],
     })),
     pagination: {
-      hasMore: response.pagination.has_more,
-      nextHref: buildPaginationHref(repoId, "issues", { state }, response.pagination.next_cursor),
+      ...buildEntityPaginationViewModel(
+        repoId,
+        "issues",
+        { state },
+        paginationState.currentPage,
+        paginationState.pageSize,
+        buildVisitedPageChain(
+          paginationState.pageChain,
+          paginationState.currentPage,
+          paginationState.cursor
+        ),
+        response.pagination.next_cursor
+      ),
     },
     state: state ?? "",
+    pageSize: paginationState.pageSize,
   };
 }
 
@@ -617,14 +883,20 @@ export async function getIssueDetailPageViewModel(
 
 export async function getPullRequestListPageViewModel(
   repoId: string,
-  { cursor, state }: { cursor?: string; state?: string },
+  {
+    page,
+    pageSize,
+    pageChain,
+    state,
+  }: { page?: string; pageSize?: string; pageChain?: string; state?: string },
   locale: Locale = "zh-CN"
 ): Promise<PullRequestListPageViewModel> {
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
+  const paginationState = resolveCursorPageState(page, pageSize, pageChain);
   const response = await fetchPullRequests(repo.repoId, {
-    pageSize: 12,
-    cursor,
+    pageSize: paginationState.pageSize,
+    cursor: paginationState.cursor ?? undefined,
     state,
     platform: repo.platform,
   });
@@ -655,14 +927,30 @@ export async function getPullRequestListPageViewModel(
         formatDate(pr.updated_at ?? pr.crawled_at) || t.common.unavailable
       }`,
       href: `/repo/${repoId}/prs/${pr.id}`,
-      level: mapPullRequestStateToLevel(pr.state, pr.merged_at),
+      stateLabel: pr.merged_at
+        ? "merged"
+        : pr.draft
+          ? "draft"
+          : pr.state ?? t.common.unknown,
       relatedUsers: relatedUsers[index],
     })),
     pagination: {
-      hasMore: response.pagination.has_more,
-      nextHref: buildPaginationHref(repoId, "prs", { state }, response.pagination.next_cursor),
+      ...buildEntityPaginationViewModel(
+        repoId,
+        "prs",
+        { state },
+        paginationState.currentPage,
+        paginationState.pageSize,
+        buildVisitedPageChain(
+          paginationState.pageChain,
+          paginationState.currentPage,
+          paginationState.cursor
+        ),
+        response.pagination.next_cursor
+      ),
     },
     state: state ?? "",
+    pageSize: paginationState.pageSize,
   };
 }
 
@@ -733,10 +1021,38 @@ export async function getSearchPageViewModel(
   }
 
   try {
-    const projects = await fetchAllProjects({
-      pageSize: 100,
-      platform: getPlatform(),
-    });
+    const platform = getPlatform();
+    const [projects, usersByLogin] = await Promise.all([
+      fetchAllProjects({
+        pageSize: 100,
+        platform,
+      }),
+      fetchUsersByLogin(trimmed, { platform }).catch(() => []),
+    ]);
+
+    const exactUsers = usersByLogin.filter(
+      (user) => (user.login ?? "").toLowerCase() === trimmed.toLowerCase()
+    );
+
+    if (exactUsers.length === 1) {
+      return {
+        query: trimmed,
+        usingLiveData: true,
+        results: [],
+        redirectHref: `/users/${exactUsers[0].id}`,
+      };
+    }
+
+    const userResults = exactUsers.slice(0, 8).map((user) => ({
+      kind: "user" as const,
+      title: user.login ?? user.name ?? user.id,
+      subtitle:
+        locale === "en"
+          ? `user / ${user.type ?? "User"} / ${user.id}`
+          : `用户 / ${user.type ?? "User"} / ${user.id}`,
+      href: `/users/${user.id}`,
+      tags: [user.id],
+    }));
 
     const results = projects
       .filter((project) => {
@@ -745,6 +1061,7 @@ export async function getSearchPageViewModel(
       })
       .slice(0, 24)
       .map((project) => ({
+        kind: "repo" as const,
         title: project.full_name ?? project.name ?? `repo/${project.repo_id}`,
         subtitle:
           locale === "en"
@@ -757,7 +1074,7 @@ export async function getSearchPageViewModel(
     return {
       query: trimmed,
       usingLiveData: true,
-      results,
+      results: [...userResults, ...results],
     };
   } catch {
     return {

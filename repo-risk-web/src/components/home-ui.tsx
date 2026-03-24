@@ -114,11 +114,11 @@ export function RepositoryCard({
           <strong>{stars}</strong>
         </div>
         <div>
-          <span className="muted">{locale === "en" ? "Forks" : "Fork"}</span>
+          <span className="muted">{locale === "en" ? "Forks" : "Forks"}</span>
           <strong>{forks}</strong>
         </div>
         <div>
-          <span className="muted">{locale === "en" ? "Issues" : "Issue"}</span>
+          <span className="muted">{locale === "en" ? "Issues" : "Issues"}</span>
           <strong>{issues}</strong>
         </div>
         <div>

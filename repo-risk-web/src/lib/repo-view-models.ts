@@ -20,9 +20,7 @@ import {
   getObservationWindow,
   loadCommitPreviewItems,
   loadRepoAggregate,
-  mapIssueStateToLevel,
   mapProjectPortrait,
-  mapPullRequestStateToLevel,
   type MetricItemViewModel,
   type PreviewItemViewModel,
   type ProjectPortraitResult,
@@ -137,7 +135,7 @@ const HOME_FILTERS: HomeSortKey[] = ["stars", "activity", "collab", "community",
 const HOME_CARD_LIMIT = 6;
 const HOME_RECOMMENDATION_REVALIDATE_SECONDS = 300;
 
-function buildDisplayRepoTags(
+function buildRepoContextTags(
   repo: { projectPortrait: ProjectPortraitResult; topics?: string[] },
   locale: Locale
 ) {
@@ -146,10 +144,32 @@ function buildDisplayRepoTags(
       ? `Trust ${repo.projectPortrait.trustLevel}`
       : `可信 ${repo.projectPortrait.trustLevel}`,
     locale === "en"
-      ? `Risk ${repo.projectPortrait.riskLevel}`
+      ? `Score ${repo.projectPortrait.riskScorePercent}`
       : `风险 ${repo.projectPortrait.riskLevel}`,
     ...(repo.topics ?? []).slice(0, 2),
   ];
+}
+
+function buildHomeMetricTags(repo: HomeRepoCandidate, locale: Locale) {
+  const tags = [
+    locale === "en"
+      ? `Commit/W ${formatNumber(repo.projectPortrait.commitFrequency)}`
+      : `周提交 ${formatNumber(repo.projectPortrait.commitFrequency)}`,
+    locale === "en"
+      ? `Active ${formatPercent(repo.projectPortrait.activeWeekRatio, 0)}`
+      : `活跃周占比 ${formatPercent(repo.projectPortrait.activeWeekRatio, 0)}`,
+    locale === "en"
+      ? `PR Backlog ${formatNumber(repo.projectPortrait.prBacklog, 0)}`
+      : `PR 积压 ${formatNumber(repo.projectPortrait.prBacklog, 0)}`,
+    locale === "en"
+      ? `Star Δ ${formatDelta(repo.projectPortrait.communityStarDelta)}`
+      : `Star 增量 ${formatDelta(repo.projectPortrait.communityStarDelta)}`,
+    locale === "en"
+      ? `Stars ${formatCompactNumber(repo.stars)}`
+      : `Stars ${formatCompactNumber(repo.stars)}`,
+  ];
+
+  return tags.filter(Boolean).slice(0, 4);
 }
 
 function sortValue(sort: HomeSortKey, repo: HomeRepoCandidate) {
@@ -189,8 +209,8 @@ function buildHomeInsights(repos: HomeRepoCandidate[], locale: Locale): InsightC
       value: mostActive.fullName,
       description:
         locale === "en"
-          ? `${formatNumber(mostActive.projectPortrait.commitFrequency)} commits per week from the latest project portrait.`
-          : `最新项目画像显示每周 ${formatNumber(mostActive.projectPortrait.commitFrequency)} 次提交。`,
+          ? `${formatNumber(mostActive.projectPortrait.commitFrequency)} commits per week over the latest 12-week window.`
+          : `近 12 周平均每周提交 ${formatNumber(mostActive.projectPortrait.commitFrequency)} 次。`,
       href: `/repo/${mostActive.repoId}/overview`,
     });
   }
@@ -201,8 +221,8 @@ function buildHomeInsights(repos: HomeRepoCandidate[], locale: Locale): InsightC
       value: mostIssues.fullName,
       description:
         locale === "en"
-          ? `${formatCompactNumber(mostIssues.openIssues)} open issues from repository metadata.`
-          : `仓库 metadata 中共有 ${formatCompactNumber(mostIssues.openIssues)} 个 open issue。`,
+          ? `${formatCompactNumber(mostIssues.openIssues)} open issues are waiting right now.`
+          : `当前共有 ${formatCompactNumber(mostIssues.openIssues)} 个 Open Issue。`,
       href: `/repo/${mostIssues.repoId}/overview`,
     });
   }
@@ -213,8 +233,8 @@ function buildHomeInsights(repos: HomeRepoCandidate[], locale: Locale): InsightC
       value: mostBacklog.fullName,
       description:
         locale === "en"
-          ? `${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} open PR backlog from the portrait snapshot.`
-          : `画像快照中有 ${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} 个打开的 PR backlog。`,
+          ? `${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} open pull requests are still in backlog.`
+          : `当前有 ${formatNumber(mostBacklog.projectPortrait.prBacklog, 0)} 个 PR 处于积压状态。`,
       href: `/repo/${mostBacklog.repoId}/risk`,
     });
   }
@@ -225,8 +245,8 @@ function buildHomeInsights(repos: HomeRepoCandidate[], locale: Locale): InsightC
       value: strongestCommunity.fullName,
       description:
         locale === "en"
-          ? `${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)} star delta over the portrait observation window.`
-          : `画像观测窗口内 Star 增量为 ${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)}。`,
+          ? `${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)} stars over the latest observation window.`
+          : `近 12 周 Star 增量为 ${formatDelta(strongestCommunity.projectPortrait.communityStarDelta)}。`,
       href: `/repo/${strongestCommunity.repoId}/overview`,
     });
   }
@@ -351,13 +371,7 @@ export async function getHomePageViewModel(
           contributorCounts.get(repo.repoId) === undefined
             ? t.common.noData
             : formatNumber(contributorCounts.get(repo.repoId) ?? 0, 0),
-        tags: [
-          repo.projectPortrait.riskLevel.toUpperCase(),
-          ...buildDisplayRepoTags(repo, locale),
-          locale === "en"
-            ? `Commit/W ${formatNumber(repo.projectPortrait.commitFrequency)}`
-            : `周提交 ${formatNumber(repo.projectPortrait.commitFrequency)}`,
-        ],
+        tags: buildHomeMetricTags(repo, locale),
       })),
       usingLiveData: true,
     };
@@ -421,7 +435,7 @@ export async function getRepoSidebarViewModel(
         value: formatDate(repo.projectPortrait.assessedAt) || t.common.unavailable,
       },
     ],
-    tags: buildDisplayRepoTags(repo, locale),
+    tags: buildRepoContextTags(repo, locale),
     riskLevel: repo.projectPortrait.riskLevel,
   };
 }
@@ -433,9 +447,29 @@ export async function getRepoOverviewViewModel(
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
   const [recentCommits, issuesPage, prsPage] = await Promise.all([
-    loadCommitPreviewItems(repo.repoId, repoId, repo.platform, locale),
-    fetchIssues(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }),
-    fetchPullRequests(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }),
+    loadCommitPreviewItems(repo.repoId, repoId, repo.platform, locale).catch(() => []),
+    fetchIssues(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }).catch(
+      () => ({
+        data: [],
+        pagination: {
+          has_more: false,
+          next_cursor: null,
+          page_size: 3,
+        },
+      })
+    ),
+    fetchPullRequests(repo.repoId, {
+      pageSize: 3,
+      state: "open",
+      platform: repo.platform,
+    }).catch(() => ({
+      data: [],
+      pagination: {
+        has_more: false,
+        next_cursor: null,
+        page_size: 3,
+      },
+    })),
   ]);
   const [issueUsers, prUsers] = await Promise.all([
     Promise.all(
@@ -455,7 +489,7 @@ export async function getRepoOverviewViewModel(
     meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
       formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
     }`,
-    level: mapIssueStateToLevel(item.state),
+    badgeLabel: item.state ?? t.common.unknown,
     href: `/repo/${repoId}/issues/${item.id}`,
     relatedUsers: issueUsers[index],
   }));
@@ -465,7 +499,11 @@ export async function getRepoOverviewViewModel(
     meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
       formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
     }`,
-    level: mapPullRequestStateToLevel(item.state, item.merged_at),
+    badgeLabel: item.merged_at
+      ? "merged"
+      : item.draft
+        ? "draft"
+        : item.state ?? t.common.unknown,
     href: `/repo/${repoId}/prs/${item.id}`,
     relatedUsers: prUsers[index],
   }));
@@ -543,7 +581,7 @@ export async function getRepoRiskViewModel(
     title: repo.fullName,
     description: repo.description,
     riskLevel: repo.projectPortrait.riskLevel,
-    tags: buildDisplayRepoTags(repo, locale),
+    tags: buildRepoContextTags(repo, locale),
     summaryStats: [
       {
         label: locale === "en" ? "Risk Score" : "风险分",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
-import { getUserDetailPageViewModel } from "@/lib/entity-view-models";
+import { getGlobalUserDetailPageViewModel } from "@/lib/entity-view-models";
 
 function getCapabilityCards(
   items: Array<{ label: string; value: string }>,
@@ -59,15 +59,15 @@ function getCapabilityCards(
   }));
 }
 
-export default async function UserDetailPage({
+export default async function GlobalUserDetailPage({
   params,
 }: {
-  params: Promise<{ repoId: string; id: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { repoId, id } = await params;
+  const { id } = await params;
   const locale = await getRequestLocale();
   const t = getDictionary(locale);
-  const model = await getUserDetailPageViewModel(repoId, id, locale);
+  const model = await getGlobalUserDetailPageViewModel(id, locale);
   const capabilityCards = getCapabilityCards(model.scoreBreakdown, locale);
 
   return (
@@ -75,14 +75,15 @@ export default async function UserDetailPage({
       <section className="card repo-hero-card">
         <div className="repo-hero-head">
           <div>
-            <div className="repo-kicker">{t.entities.users.detail}</div>
+            <div className="repo-kicker">
+              {locale === "en" ? "Global User Portrait" : "全局用户画像"}
+            </div>
             <h2>{model.title}</h2>
             <p className="muted repo-hero-description">{model.subtitle}</p>
           </div>
         </div>
         <div className="inline-links">
-          <Link href={model.backHref}>{t.entities.users.backToUsers}</Link>
-          <Link href={`/repo/${repoId}/commits`}>{t.entities.users.openCommits}</Link>
+          <Link href={model.backHref}>{locale === "en" ? "Back to Search" : "返回搜索"}</Link>
         </div>
       </section>
 

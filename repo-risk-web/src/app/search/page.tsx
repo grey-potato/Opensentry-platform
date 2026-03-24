@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { EmptyStateCard } from "@/components/repo-ui";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
@@ -13,6 +14,10 @@ export default async function SearchPage({
   const locale = await getRequestLocale();
   const t = getDictionary(locale);
   const model = await getSearchPageViewModel(params.q ?? "", locale);
+
+  if (model.redirectHref) {
+    redirect(model.redirectHref);
+  }
 
   return (
     <div className="repo-overview-shell">
@@ -35,6 +40,15 @@ export default async function SearchPage({
                 </div>
               </div>
               <div className="entity-tag-row">
+                <span className="badge">
+                  {item.kind === "user"
+                    ? locale === "en"
+                      ? "User"
+                      : "用户"
+                    : locale === "en"
+                      ? "Repo"
+                      : "仓库"}
+                </span>
                 {item.tags.map((tag) => (
                   <span key={tag} className="badge">
                     {tag}

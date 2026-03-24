@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyStateCard, PaginationLink, RiskBadge } from "@/components/repo-ui";
+import { EmptyStateCard, PaginationLink } from "@/components/repo-ui";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
 import { getCommitListPageViewModel } from "@/lib/entity-view-models";
@@ -10,7 +10,9 @@ export default async function CommitsPage({
 }: {
   params: Promise<{ repoId: string }>;
   searchParams: Promise<{
-    cursor?: string;
+    page?: string;
+    page_size?: string;
+    page_chain?: string;
     author_id?: string;
     sort?: string;
     order?: string;
@@ -20,12 +22,18 @@ export default async function CommitsPage({
   const filters = await searchParams;
   const locale = await getRequestLocale();
   const t = getDictionary(locale);
-  const model = await getCommitListPageViewModel(repoId, {
-    cursor: filters.cursor,
-    authorId: filters.author_id,
-    sort: filters.sort,
-    order: filters.order,
-  }, locale);
+  const model = await getCommitListPageViewModel(
+    repoId,
+    {
+      page: filters.page,
+      pageSize: filters.page_size,
+      pageChain: filters.page_chain,
+      authorId: filters.author_id,
+      sort: filters.sort,
+      order: filters.order,
+    },
+    locale
+  );
 
   return (
     <div className="repo-overview-shell">
@@ -42,6 +50,11 @@ export default async function CommitsPage({
             placeholder={t.entities.commits.filterAuthor}
             defaultValue={model.authorId}
           />
+          <select name="page_size" defaultValue={String(model.pageSize)}>
+            <option value="10">{locale === "en" ? "10 / page" : "10 / 页"}</option>
+            <option value="20">{locale === "en" ? "20 / page" : "20 / 页"}</option>
+            <option value="50">{locale === "en" ? "50 / page" : "50 / 页"}</option>
+          </select>
           <select name="sort" defaultValue={model.sort}>
             <option value="sha">{t.entities.commits.sortSha}</option>
             <option value="created_at">{t.entities.commits.sortCreatedAt}</option>
@@ -74,7 +87,11 @@ export default async function CommitsPage({
                   <div className="related-user-row">
                     {item.relatedUsers.length ? (
                       item.relatedUsers.map((user) => (
-                        <Link key={`${item.sha}-${user.id}`} href={user.href} className="related-user-link">
+                        <Link
+                          key={`${item.sha}-${user.id}`}
+                          href={user.href}
+                          className="related-user-link"
+                        >
                           <span className="muted">{user.role}</span>
                           <strong>{user.label}</strong>
                         </Link>
@@ -84,11 +101,12 @@ export default async function CommitsPage({
                     )}
                   </div>
                 </div>
-                <RiskBadge level={item.portraitLevel} locale={locale} />
+                <span className="badge">
+                  {item.portraitAvailable ? item.trustLevel : t.entities.commits.noPortrait}
+                </span>
               </div>
               <div className="entity-tag-row">
-                <span className="badge">{item.portraitLabel}</span>
-                <span className="badge">{item.sha.slice(0, 12)}</span>
+                <span className="badge">{`SHA ${item.sha.slice(0, 7)}`}</span>
               </div>
             </article>
           ))}
@@ -100,7 +118,7 @@ export default async function CommitsPage({
         />
       )}
 
-      <PaginationLink nextHref={model.pagination.nextHref} locale={locale} />
+      <PaginationLink pagination={model.pagination} locale={locale} />
     </div>
   );
 }

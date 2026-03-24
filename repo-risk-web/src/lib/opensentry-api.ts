@@ -1,5 +1,7 @@
 const DEFAULT_BASE_URL = "http://172.30.95.44:8111";
 const DEFAULT_PLATFORM = "github";
+const FETCH_RETRY_ATTEMPTS = 2;
+const FETCH_RETRY_DELAY_MS = 150;
 
 type JsonObject = Record<string, unknown>;
 
@@ -349,15 +351,57 @@ function buildQuery(
   return query ? `?${query}` : "";
 }
 
+function shouldRetryFetchError(error: unknown) {
+  if (!(error instanceof TypeError)) {
+    return false;
+  }
+
+  const code =
+    error.cause && typeof error.cause === "object" && "code" in error.cause
+      ? (error.cause as { code?: unknown }).code
+      : undefined;
+
+  return (
+    code === "UND_ERR_SOCKET" ||
+    code === "UND_ERR_CONNECT_TIMEOUT" ||
+    code === "ECONNRESET" ||
+    code === "ETIMEDOUT"
+  );
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(path: string, init?: RequestInit) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= FETCH_RETRY_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetch(path, {
+        ...init,
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+          ...(init?.headers ?? {}),
+        },
+      });
+    } catch (error) {
+      lastError = error;
+
+      if (!shouldRetryFetchError(error) || attempt === FETCH_RETRY_ATTEMPTS) {
+        throw error;
+      }
+
+      await delay(FETCH_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  throw lastError;
+}
+
 async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
+  const response = await fetchWithRetry(path, init);
 
   if (!response.ok) {
     throw new Error(`OpenSentry API ${response.status}: ${path}`);
@@ -367,14 +411,7 @@ async function readJson<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function readJsonOrNull<T>(path: string, init?: RequestInit): Promise<T | null> {
-  const response = await fetch(path, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      ...(init?.headers ?? {}),
-    },
-  });
+  const response = await fetchWithRetry(path, init);
 
   if (response.status === 404) {
     return null;
@@ -582,6 +619,19 @@ export async function fetchUser(
   const url = `${getBaseUrl(options.baseUrl)}/api/v1/${resolvedPlatform}/users/${userId}`;
   const payload = await readJson<ApiEnvelope<UserItem>>(url);
   return payload.data;
+}
+
+export async function fetchUsersByLogin(
+  login: string,
+  options: RequestOptions = {}
+): Promise<UserItem[]> {
+  const resolvedPlatform = getPlatform(options.platform);
+  const encodedLogin = encodeURIComponent(login);
+  const url = `${getBaseUrl(
+    options.baseUrl
+  )}/api/v1/${resolvedPlatform}/users/by-login/${encodedLogin}`;
+  const payload = await readJson<ApiListResponse<UserItem>>(url);
+  return payload.data ?? [];
 }
 
 export async function fetchLatestUserPortrait(

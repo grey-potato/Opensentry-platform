@@ -50,16 +50,6 @@ export default async function Home({
             />
             <button type="submit">{t.layout.searchButton}</button>
           </form>
-          <div className="home-hero-note">
-            <span className="badge">
-              {model.usingLiveData ? t.home.liveBadge : t.home.apiErrorBadge}
-            </span>
-            <span className="muted">
-              {model.usingLiveData
-                ? t.home.liveNote
-                : t.home.apiErrorNote}
-            </span>
-          </div>
         </div>
       </section>
 
@@ -105,16 +95,16 @@ export default async function Home({
         ))}
       </section>
 
-      <HomeEmptyState
-        title={model.usingLiveData ? t.home.currentScopeTitle : t.home.apiErrorTitle}
-        description={
-          model.usingLiveData
-            ? t.home.currentScopeDescription
-            : model.errorMessage
+      {!model.usingLiveData || !model.repositories.length ? (
+        <HomeEmptyState
+          title={t.home.apiErrorTitle}
+          description={
+            model.errorMessage
               ? `${t.home.apiErrorDescription} ${model.errorMessage}`
               : t.home.apiErrorDescription
-        }
-      />
+          }
+        />
+      ) : null}
     </div>
   );
 }

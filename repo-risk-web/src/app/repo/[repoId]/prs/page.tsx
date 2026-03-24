@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyStateCard, PaginationLink, RiskBadge } from "@/components/repo-ui";
+import { EmptyStateCard, PaginationLink } from "@/components/repo-ui";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
 import { getPullRequestListPageViewModel } from "@/lib/entity-view-models";
@@ -9,14 +9,16 @@ export default async function PrsPage({
   searchParams,
 }: {
   params: Promise<{ repoId: string }>;
-  searchParams: Promise<{ cursor?: string; state?: string }>;
+  searchParams: Promise<{ page?: string; page_size?: string; page_chain?: string; state?: string }>;
 }) {
   const { repoId } = await params;
   const filters = await searchParams;
   const locale = await getRequestLocale();
   const t = getDictionary(locale);
   const model = await getPullRequestListPageViewModel(repoId, {
-    cursor: filters.cursor,
+    page: filters.page,
+    pageSize: filters.page_size,
+    pageChain: filters.page_chain,
     state: filters.state,
   }, locale);
 
@@ -30,6 +32,11 @@ export default async function PrsPage({
           </div>
         </div>
         <form className="entity-filter-form" method="get">
+          <select name="page_size" defaultValue={String(model.pageSize)}>
+            <option value="10">{locale === "en" ? "10 / page" : "10 / 页"}</option>
+            <option value="20">{locale === "en" ? "20 / page" : "20 / 页"}</option>
+            <option value="50">{locale === "en" ? "50 / page" : "50 / 页"}</option>
+          </select>
           <select name="state" defaultValue={model.state}>
             <option value="">{t.entities.prs.allStates}</option>
             <option value="open">{t.entities.prs.open}</option>
@@ -69,7 +76,7 @@ export default async function PrsPage({
                     )}
                   </div>
                 </div>
-                <RiskBadge level={item.level} locale={locale} />
+                <span className="badge">{item.stateLabel}</span>
               </div>
             </article>
           ))}
@@ -81,7 +88,7 @@ export default async function PrsPage({
         />
       )}
 
-      <PaginationLink nextHref={model.pagination.nextHref} locale={locale} />
+      <PaginationLink pagination={model.pagination} locale={locale} />
     </div>
   );
 }
