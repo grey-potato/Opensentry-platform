@@ -728,8 +728,8 @@ export async function loadCommitPreviewItems(
 ) {
   const commitsResponse = await fetchCommits(repoId, {
     pageSize: 3,
-    sort: "sha",
-    order: "asc",
+    sort: "crawled_at",
+    order: "desc",
     platform,
   });
   const items = commitsResponse.data ?? [];

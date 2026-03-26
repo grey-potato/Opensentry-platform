@@ -333,8 +333,8 @@ export async function getCommitListPageViewModel(
     pageSize,
     pageChain,
     authorId,
-    sort = "sha",
-    order = "asc",
+    sort = "crawled_at",
+    order = "desc",
   }: {
     page?: string;
     pageSize?: string;

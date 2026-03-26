@@ -110,8 +110,8 @@ const dictionary = {
       commits: {
         title: "Commits",
         filterAuthor: "Filter by author ID",
+        sortCrawledAt: "Sort by latest crawl",
         sortSha: "Sort by SHA",
-        sortCreatedAt: "Sort by created_at",
         asc: "Ascending",
         desc: "Descending",
         emptyTitle: "No Commits",
@@ -307,8 +307,8 @@ const dictionary = {
       commits: {
         title: "提交",
         filterAuthor: "按作者 ID 筛选",
+        sortCrawledAt: "按最近抓取排序",
         sortSha: "按 SHA 排序",
-        sortCreatedAt: "按 created_at 排序",
         asc: "升序",
         desc: "降序",
         emptyTitle: "暂无提交",

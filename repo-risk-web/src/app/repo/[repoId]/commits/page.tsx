@@ -56,8 +56,8 @@ export default async function CommitsPage({
             <option value="50">{locale === "en" ? "50 / page" : "50 / 页"}</option>
           </select>
           <select name="sort" defaultValue={model.sort}>
+            <option value="crawled_at">{t.entities.commits.sortCrawledAt}</option>
             <option value="sha">{t.entities.commits.sortSha}</option>
-            <option value="created_at">{t.entities.commits.sortCreatedAt}</option>
           </select>
           <select name="order" defaultValue={model.order}>
             <option value="asc">{t.entities.commits.asc}</option>
