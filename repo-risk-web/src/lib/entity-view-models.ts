@@ -1034,15 +1034,6 @@ export async function getSearchPageViewModel(
       (user) => (user.login ?? "").toLowerCase() === trimmed.toLowerCase()
     );
 
-    if (exactUsers.length === 1) {
-      return {
-        query: trimmed,
-        usingLiveData: true,
-        results: [],
-        redirectHref: `/users/${exactUsers[0].id}`,
-      };
-    }
-
     const userResults = exactUsers.slice(0, 8).map((user) => ({
       kind: "user" as const,
       title: user.login ?? user.name ?? user.id,
@@ -1070,6 +1061,15 @@ export async function getSearchPageViewModel(
         href: `/repo/${project.repo_id}/overview`,
         tags: [project.database_name],
       }));
+
+    if (exactUsers.length === 1 && results.length === 0) {
+      return {
+        query: trimmed,
+        usingLiveData: true,
+        results: [],
+        redirectHref: `/users/${exactUsers[0].id}`,
+      };
+    }
 
     return {
       query: trimmed,

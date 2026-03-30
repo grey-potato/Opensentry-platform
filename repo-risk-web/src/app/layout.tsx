@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Geist, Geist_Mono } from "next/font/google";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { getRequestLocale } from "@/lib/locale-server";
 import { getDictionary } from "@/lib/ui-copy";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "OpenSentry 仓库视图 | OpenSentry Repository View",
@@ -30,10 +19,8 @@ export default async function RootLayout({
   const t = getDictionary(locale);
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang={locale}>
       <body>
-        <div className="bg-shape bg-shape-a" />
-        <div className="bg-shape bg-shape-b" />
         <header className="topbar">
           <Link className="brand brand-link" href="/">
             <span className="brand-mark">OS</span>

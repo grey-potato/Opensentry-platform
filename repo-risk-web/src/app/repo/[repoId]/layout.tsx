@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { RepoContextPanel, RepoTabs } from "@/components/repo-ui";
+import { RepoShell } from "@/components/repo-shell";
 import { getRequestLocale } from "@/lib/locale-server";
 
 export default async function RepoLayout({
@@ -12,13 +12,5 @@ export default async function RepoLayout({
   const { repoId } = await params;
   const locale = await getRequestLocale();
 
-  return (
-    <div>
-      <RepoTabs repoId={repoId} locale={locale} />
-      <div className="repo-layout">
-        <div>{children}</div>
-        <RepoContextPanel repoId={repoId} locale={locale} />
-      </div>
-    </div>
-  );
+  return <RepoShell repoId={repoId} locale={locale}>{children}</RepoShell>;
 }

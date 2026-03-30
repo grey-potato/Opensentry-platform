@@ -1,8 +1,8 @@
 import { unstable_cache } from "next/cache";
 import {
-  fetchAllProjects,
   fetchIssues,
   fetchLatestProjectPortrait,
+  fetchProjects,
   fetchPullRequests,
   fetchRepository,
   fetchRepositoryUsers,
@@ -10,8 +10,6 @@ import {
   type ProjectItem,
 } from "@/lib/opensentry-api";
 import {
-  buildIssueRelatedUsers,
-  buildPullRequestRelatedUsers,
   formatCompactNumber,
   formatDate,
   formatDelta,
@@ -131,9 +129,88 @@ type HomeRepoCandidate = {
   projectPortrait: ProjectPortraitResult;
 };
 
+type HomeRepoUniverse = {
+  all: HomeRepoCandidate[];
+  stable: HomeRepoCandidate[];
+  exploratory: HomeRepoCandidate[];
+};
+
 const HOME_FILTERS: HomeSortKey[] = ["stars", "activity", "collab", "community", "updated"];
 const HOME_CARD_LIMIT = 6;
 const HOME_RECOMMENDATION_REVALIDATE_SECONDS = 300;
+const HOME_SOURCE_PAGE_SIZE = 50;
+const HOME_STABLE_PAGE_COUNT = readPositiveIntEnv("OPENSENTRY_HOME_STABLE_PAGE_COUNT", 1);
+const HOME_SOURCE_PAGE_COUNT = readPositiveIntEnv(
+  "OPENSENTRY_HOME_PROJECT_PAGE_COUNT",
+  readPositiveIntEnv("OPENSENTRY_HOME_MAX_PROJECT_PAGES", 2)
+);
+const HOME_EXPLORATION_SLOT_COUNT = Math.min(
+  HOME_CARD_LIMIT - 1,
+  readPositiveIntEnv("OPENSENTRY_HOME_EXPLORATION_SLOT_COUNT", 2)
+);
+
+function readPositiveIntEnv(name: string, fallback: number) {
+  const raw = process.env[name];
+  const numeric = Number(raw);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function buildRotatingProjectPageNumbers(
+  totalPages: number,
+  startPage: number,
+  pagesPerWindow: number,
+  windowIndex: number
+) {
+  const safeStartPage = Math.max(1, startPage);
+  const safeTotalPages = Math.max(safeStartPage, totalPages);
+  const rotatingPageCount = safeTotalPages - safeStartPage + 1;
+  if (rotatingPageCount <= 0) {
+    return [];
+  }
+
+  const safePagesPerWindow = Math.max(1, Math.min(safeTotalPages, pagesPerWindow));
+  const effectivePagesPerWindow = Math.min(rotatingPageCount, safePagesPerWindow);
+  const startOffset = (Math.max(0, windowIndex) * effectivePagesPerWindow) % rotatingPageCount;
+
+  return Array.from(
+    { length: effectivePagesPerWindow },
+    (_, index) => safeStartPage + ((startOffset + index) % rotatingPageCount)
+  );
+}
+
+function sortHomeRepos(repos: HomeRepoCandidate[], sort: HomeSortKey) {
+  return [...repos].sort((left, right) => sortValue(sort, right) - sortValue(sort, left));
+}
+
+function buildHomeSelection(
+  universe: HomeRepoUniverse,
+  sort: HomeSortKey
+): HomeRepoCandidate[] {
+  const stableTarget = Math.max(1, HOME_CARD_LIMIT - HOME_EXPLORATION_SLOT_COUNT);
+  const selected = new Map<number, HomeRepoCandidate>();
+
+  for (const repo of sortHomeRepos(universe.stable, sort).slice(0, stableTarget)) {
+    selected.set(repo.repoId, repo);
+  }
+
+  for (const repo of sortHomeRepos(universe.exploratory, sort)) {
+    if (selected.size >= HOME_CARD_LIMIT) {
+      break;
+    }
+    selected.set(repo.repoId, repo);
+  }
+
+  if (selected.size < HOME_CARD_LIMIT) {
+    for (const repo of sortHomeRepos(universe.all, sort)) {
+      if (selected.size >= HOME_CARD_LIMIT) {
+        break;
+      }
+      selected.set(repo.repoId, repo);
+    }
+  }
+
+  return sortHomeRepos([...selected.values()], sort).slice(0, HOME_CARD_LIMIT);
+}
 
 function buildRepoContextTags(
   repo: { projectPortrait: ProjectPortraitResult; topics?: string[] },
@@ -282,33 +359,114 @@ async function loadHomeRepoCandidate(project: ProjectItem): Promise<HomeRepoCand
 }
 
 const loadCachedHomeRepoUniverse = unstable_cache(
-  async (platform: string) => {
-    const projects = await fetchAllProjects({
-      pageSize: 100,
+  async (platform: string): Promise<HomeRepoUniverse> => {
+    const firstPage = await fetchProjects({
+      page: 1,
+      pageSize: HOME_SOURCE_PAGE_SIZE,
       platform,
     });
+    const totalPages = Math.max(1, Math.ceil(firstPage.total / Math.max(1, firstPage.page_size)));
+    const windowIndex = Math.floor(
+      Date.now() / (HOME_RECOMMENDATION_REVALIDATE_SECONDS * 1000)
+    );
+    const stablePageNumbers = Array.from(
+      { length: Math.min(totalPages, HOME_STABLE_PAGE_COUNT) },
+      (_, index) => index + 1
+    );
+    const exploratoryPageNumbers = buildRotatingProjectPageNumbers(
+      totalPages,
+      stablePageNumbers.length + 1,
+      HOME_SOURCE_PAGE_COUNT,
+      windowIndex
+    );
+    const pageNumbers = [...new Set([...stablePageNumbers, ...exploratoryPageNumbers])];
+    const pagePayloads = new Map([[1, firstPage]]);
 
-    const uniqueProjects = new Map<number, ProjectItem>();
-    for (const project of projects) {
+    const extraPagePayloads = await Promise.all(
+      pageNumbers
+        .filter((page) => page !== 1)
+        .map(async (page) => [
+          page,
+          await fetchProjects({
+            page,
+            pageSize: HOME_SOURCE_PAGE_SIZE,
+            platform,
+          }),
+        ] as const)
+    );
+
+    for (const [page, payload] of extraPagePayloads) {
+      pagePayloads.set(page, payload);
+    }
+
+    const projectsByBucket = {
+      stable: stablePageNumbers.flatMap((page) => pagePayloads.get(page)?.items ?? []),
+      exploratory: exploratoryPageNumbers.flatMap((page) => pagePayloads.get(page)?.items ?? []),
+    };
+
+    const uniqueProjects = new Map<
+      number,
+      {
+        project: ProjectItem;
+        bucket: "stable" | "exploratory";
+      }
+    >();
+
+    for (const project of projectsByBucket.stable) {
       if (!uniqueProjects.has(project.repo_id)) {
-        uniqueProjects.set(project.repo_id, project);
+        uniqueProjects.set(project.repo_id, { project, bucket: "stable" });
+      }
+    }
+
+    for (const project of projectsByBucket.exploratory) {
+      if (!uniqueProjects.has(project.repo_id)) {
+        uniqueProjects.set(project.repo_id, { project, bucket: "exploratory" });
       }
     }
 
     const settled = await Promise.allSettled(
-      [...uniqueProjects.values()].map((project) => loadHomeRepoCandidate(project))
+      [...uniqueProjects.values()].map(async ({ project, bucket }) => ({
+        bucket,
+        repo: await loadHomeRepoCandidate(project),
+      }))
     );
 
-    return settled
+    const all = settled
       .filter(
         (
           result
-        ): result is PromiseFulfilledResult<HomeRepoCandidate | null> => result.status === "fulfilled"
+        ): result is PromiseFulfilledResult<{
+          bucket: "stable" | "exploratory";
+          repo: HomeRepoCandidate | null;
+        }> => result.status === "fulfilled"
       )
       .map((result) => result.value)
-      .filter((item): item is HomeRepoCandidate => Boolean(item));
+      .filter((item): item is { bucket: "stable" | "exploratory"; repo: HomeRepoCandidate } =>
+        Boolean(item.repo)
+      );
+
+    return {
+      all: all.map((item) => item.repo),
+      stable: all.filter((item) => item.bucket === "stable").map((item) => item.repo),
+      exploratory: all.filter((item) => item.bucket === "exploratory").map((item) => item.repo),
+    };
   },
   ["home-repo-candidates"],
+  {
+    revalidate: HOME_RECOMMENDATION_REVALIDATE_SECONDS,
+  }
+);
+
+const loadCachedHomeContributorCount = unstable_cache(
+  async (repoId: number, platform: string) => {
+    const response = await fetchRepositoryUsers(repoId, {
+      pageSize: 100,
+      platform,
+    }).catch(() => null);
+
+    return response?.data?.length ?? null;
+  },
+  ["home-repo-contributor-count"],
   {
     revalidate: HOME_RECOMMENDATION_REVALIDATE_SECONDS,
   }
@@ -321,25 +479,17 @@ export async function getHomePageViewModel(
   const t = getDictionary(locale);
 
   try {
-    const repos = await loadCachedHomeRepoUniverse(getPlatform());
-    if (!repos.length) {
+    const universe = await loadCachedHomeRepoUniverse(getPlatform());
+    if (!universe.all.length) {
       throw new Error(locale === "en" ? "No repositories available." : "没有可用仓库。");
     }
 
-    const ordered = [...repos]
-      .sort((left, right) => sortValue(sort, right) - sortValue(sort, left))
-      .slice(0, HOME_CARD_LIMIT);
+    const ordered = buildHomeSelection(universe, sort);
 
     const contributorEntries = await Promise.all(
       ordered.map(async (repo) => ({
         repoId: repo.repoId,
-        count:
-          (
-            await fetchRepositoryUsers(repo.repoId, {
-              pageSize: 100,
-              platform: repo.platform,
-            }).catch(() => null)
-          )?.data?.length ?? null,
+        count: await loadCachedHomeContributorCount(repo.repoId, repo.platform),
       }))
     );
 
@@ -355,7 +505,7 @@ export async function getHomePageViewModel(
         href: value === "stars" ? "/" : `/?sort=${value}`,
         selected: value === sort,
       })),
-      insights: buildHomeInsights(repos, locale),
+      insights: buildHomeInsights(universe.all, locale),
       repositories: ordered.map((repo) => ({
         name: repo.fullName,
         description: repo.description,
@@ -447,7 +597,10 @@ export async function getRepoOverviewViewModel(
   const repo = await loadRepoAggregate(repoId, getPlatform());
   const t = getDictionary(locale);
   const [recentCommits, issuesPage, prsPage] = await Promise.all([
-    loadCommitPreviewItems(repo.repoId, repoId, repo.platform, locale).catch(() => []),
+    loadCommitPreviewItems(repo.repoId, repoId, repo.platform, locale, {
+      includePortraits: false,
+      includeRelatedUsers: false,
+    }).catch(() => []),
     fetchIssues(repo.repoId, { pageSize: 3, state: "open", platform: repo.platform }).catch(
       () => ({
         data: [],
@@ -471,30 +624,18 @@ export async function getRepoOverviewViewModel(
       },
     })),
   ]);
-  const [issueUsers, prUsers] = await Promise.all([
-    Promise.all(
-      (issuesPage.data ?? [])
-        .slice(0, 3)
-        .map((item) => buildIssueRelatedUsers(item, repoId, repo.platform, locale))
-    ),
-    Promise.all(
-      (prsPage.data ?? [])
-        .slice(0, 3)
-        .map((item) => buildPullRequestRelatedUsers(item, repoId, repo.platform, locale))
-    ),
-  ]);
 
-  const openIssues = (issuesPage.data ?? []).slice(0, 3).map((item, index) => ({
+  const openIssues = (issuesPage.data ?? []).slice(0, 3).map((item) => ({
     title: item.title ?? `Issue #${item.number ?? item.id}`,
     meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
       formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
     }`,
     badgeLabel: item.state ?? t.common.unknown,
     href: `/repo/${repoId}/issues/${item.id}`,
-    relatedUsers: issueUsers[index],
+    relatedUsers: [],
   }));
 
-  const pullRequests = (prsPage.data ?? []).slice(0, 3).map((item, index) => ({
+  const pullRequests = (prsPage.data ?? []).slice(0, 3).map((item) => ({
     title: item.title ?? `PR #${item.number ?? item.id}`,
     meta: `#${item.number ?? item.id} / ${item.state ?? t.common.unknown} / ${
       formatDate(item.updated_at ?? item.crawled_at) || t.common.unavailable
@@ -505,7 +646,7 @@ export async function getRepoOverviewViewModel(
         ? "draft"
         : item.state ?? t.common.unknown,
     href: `/repo/${repoId}/prs/${item.id}`,
-    relatedUsers: prUsers[index],
+    relatedUsers: [],
   }));
 
   const observationLabel =

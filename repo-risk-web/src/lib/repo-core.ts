@@ -724,8 +724,14 @@ export async function loadCommitPreviewItems(
   repoId: number,
   routeRepoId: string,
   platform: string,
-  locale: Locale
+  locale: Locale,
+  options?: {
+    includePortraits?: boolean;
+    includeRelatedUsers?: boolean;
+  }
 ) {
+  const includePortraits = options?.includePortraits ?? true;
+  const includeRelatedUsers = options?.includeRelatedUsers ?? true;
   const commitsResponse = await fetchCommits(repoId, {
     pageSize: 3,
     sort: "crawled_at",
@@ -733,13 +739,17 @@ export async function loadCommitPreviewItems(
     platform,
   });
   const items = commitsResponse.data ?? [];
-  const portraits = await Promise.all(
-    items.map((item) => fetchCommitPortrait(repoId, item.sha, { platform }).catch(() => null))
-  );
+  const portraits = includePortraits
+    ? await Promise.all(
+        items.map((item) => fetchCommitPortrait(repoId, item.sha, { platform }).catch(() => null))
+      )
+    : items.map(() => null);
 
-  const relatedUsers = await Promise.all(
-    items.map((item) => buildCommitRelatedUsers(item, routeRepoId, platform, locale))
-  );
+  const relatedUsers = includeRelatedUsers
+    ? await Promise.all(
+        items.map((item) => buildCommitRelatedUsers(item, routeRepoId, platform, locale))
+      )
+    : items.map(() => []);
 
   return items.map((item, index) => {
     const portrait = mapCommitPortrait(portraits[index]);
@@ -748,11 +758,13 @@ export async function loadCommitPreviewItems(
       meta: `${formatShortSha(item.sha)} / ${formatDate(
         readString(item.author_info ?? undefined, "date") || item.crawled_at
       )}`,
-      badgeLabel: portrait.available
-        ? portrait.trustLevel
-        : locale === "en"
-          ? "portrait unavailable"
-          : "暂无画像",
+      badgeLabel: includePortraits
+        ? portrait.available
+          ? portrait.trustLevel
+          : locale === "en"
+            ? "portrait unavailable"
+            : "暂无画像"
+        : formatShortSha(item.sha),
       href: `/repo/${routeRepoId}/commits/${item.sha}`,
       relatedUsers: relatedUsers[index],
     };

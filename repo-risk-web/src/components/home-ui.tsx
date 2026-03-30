@@ -73,9 +73,9 @@ export function HomeInsightCard({
       <div className="muted">{title}</div>
       <h3>{value}</h3>
       <p className="muted">{description}</p>
-      <div className="inline-links">
-        <Link href={href}>{t.common.viewAll}</Link>
-      </div>
+      <Link className="home-insight-button" href={href}>
+        {t.common.viewAll}
+      </Link>
     </article>
   );
 }
